@@ -4,7 +4,7 @@ root = true
 # インデントの種類: space, tab
 indent_style = space
 # インデントの大きさ
-indent_size = 4
+indent_size = 2
 # 改行コードの種類:  lf, cr, crlf
 end_of_line = lf
 # 文字コード: utf-8, latin1, utf-8-bom and more
