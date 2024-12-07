@@ -1,37 +1,47 @@
 import { NextResponse } from 'next/server';
 import { squareClient } from '@/lib/square/client';
-import type { CartItem } from '@/lib/store/cart';
+import { randomUUID } from 'crypto';
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
 
 interface CheckoutRequest {
   items: CartItem[];
-  redirectUrl?: string;
 }
 
 export async function POST(request: Request) {
   try {
-    const { items, redirectUrl }: CheckoutRequest = await request.json();
+    const { items }: CheckoutRequest = await request.json();
 
-    const response = await squareClient.checkoutApi.createPaymentLink({
-      idempotencyKey: crypto.randomUUID(),
+    const { result } = await squareClient.checkoutApi.createPaymentLink({
+      idempotencyKey: randomUUID(),
       order: {
-        locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID!,
+        locationId: process.env.SQUARE_LOCATION_ID!,
         lineItems: items.map((item) => ({
           quantity: item.quantity.toString(),
           catalogObjectId: item.id,
-          // Square APIの要件に合わせて追加のフィールドが必要な場合はここに追加
         })),
       },
       checkoutOptions: {
-        redirectUrl: redirectUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/cart`,
-        askForShippingAddress: true,
+        redirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/order/complete`,
       },
     });
 
-    return NextResponse.json(response.result);
+    if (!result.paymentLink) {
+      throw new Error('Failed to create payment link');
+    }
+
+    return NextResponse.json({
+      url: result.paymentLink.url,
+    });
   } catch (error) {
     console.error('Checkout error:', error);
     return NextResponse.json(
-      { error: 'チェックアウトの作成に失敗しました' },
+      { error: 'チェックアウトに失敗しました' },
       { status: 500 }
     );
   }

@@ -1,5 +1,11 @@
 .
 ├── app
+│   ├── api
+│   │   ├── catalog
+│   │   │   └── route.ts
+│   │   └── square
+│   │       └── checkout
+│   │           └── route.ts
 │   ├── fonts
 │   │   ├── GeistMonoVF.woff
 │   │   └── GeistVF.woff
@@ -12,12 +18,24 @@
 │   │   ├── button.tsx
 │   │   ├── dialog.tsx
 │   │   ├── input.tsx
-│   │   └── tabs.tsx
+│   │   ├── tabs.tsx
+│   │   ├── toast.tsx
+│   │   └── use-toast.ts
+│   ├── cart
+│   │   ├── cart-provider.tsx
+│   │   └── cart-items.tsx
 │   ├── delivery-date.tsx
 │   ├── delivery-info.tsx
 │   ├── ec-page.tsx
 │   └── product-list.tsx
 ├── lib
+│   ├── constants
+│   │   └── demo-products.ts
+│   ├── square
+│   │   ├── client.ts
+│   │   └── types.ts
+│   ├── store
+│   │   └── cart.ts
 │   └── utils.ts
 ├── .cursorrules
 ├── .editorconfig
