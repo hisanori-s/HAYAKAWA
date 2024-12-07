@@ -4,6 +4,7 @@ import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { CartProvider } from "@/components/cart/cart-provider";
 import { Toaster } from "@/components/ui/toaster";
+import { Header } from "@/components/header";
 
 export const metadata: Metadata = {
   title: "HAYAKAWA EC",
@@ -17,9 +18,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans`}>
+      <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans min-h-screen flex flex-col`}>
         <CartProvider>
-          {children}
+          <Header />
+          <main className="flex-1">
+            {children}
+          </main>
           <Toaster />
         </CartProvider>
       </body>

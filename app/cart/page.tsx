@@ -2,15 +2,15 @@
 
 import { useCartStore } from '@/lib/store/cart';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Minus, Plus, Trash2, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
+import { CartItems } from '@/components/cart/cart-items';
 
 export default function CartPage() {
-  const { items, updateQuantity, removeItem } = useCartStore();
+  const { items } = useCartStore();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -37,7 +37,7 @@ export default function CartPage() {
       console.error('Checkout error:', error);
       toast({
         title: 'エラー',
-        description: 'チェックアウトに失敗しました。もう一度お試しください。',
+        description: 'チェックアウトに失敗しま�。もう一度お試しください。',
         variant: 'destructive',
       });
     } finally {
@@ -61,57 +61,18 @@ export default function CartPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-8">カート</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-bold">カート</h1>
+        <Link href="/">
+          <Button variant="outline">商品一覧に戻る</Button>
+        </Link>
+      </div>
       <div className="grid gap-8 md:grid-cols-3">
-        <div className="md:col-span-2 space-y-4">
-          {items.map((item) => (
-            <Card key={item.id} className="p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-medium">{item.name}</h3>
-                  <p className="text-sm text-gray-500">{item.price}円</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeItem(item.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex items-center space-x-2 mt-4">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <Input
-                  type="number"
-                  value={item.quantity}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value);
-                    if (!isNaN(value) && value > 0) {
-                      updateQuantity(item.id, value);
-                    }
-                  }}
-                  className="w-20 text-center"
-                  min="1"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            </Card>
-          ))}
+        <div className="md:col-span-2">
+          <CartItems />
         </div>
         <div>
-          <Card className="p-4">
+          <Card className="p-4 sticky top-4">
             <h2 className="font-medium mb-4">注文内容</h2>
             <div className="space-y-2">
               {items.map((item) => (

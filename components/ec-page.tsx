@@ -1,14 +1,18 @@
 'use client'
 
 import Image from "next/image"
-import { useState } from "react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { ProductList } from "@/components/product-list"
 import { DeliveryInfo } from "@/components/delivery-info"
 import { DeliveryDate } from "@/components/delivery-date"
 import { ShoppingCart } from 'lucide-react'
+import Link from 'next/link'
+import { useCartStore } from '@/lib/store/cart'
 
 export default function ECPage() {
+  const items = useCartStore((state) => state.items);
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
     <div className="min-h-screen bg-[#f8f7f4]">
       {/* Hero Section */}
@@ -50,12 +54,14 @@ export default function ECPage() {
                 お届け日について
               </TabsTrigger>
             </div>
-            <TabsTrigger
-              value="cart"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2"
-            >
+            <Link href="/cart" className="px-4 py-2 relative">
               <ShoppingCart className="h-5 w-5" />
-            </TabsTrigger>
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {itemCount}
+                </span>
+              )}
+            </Link>
           </TabsList>
           <TabsContent value="products">
             <ProductList />
@@ -65,12 +71,6 @@ export default function ECPage() {
           </TabsContent>
           <TabsContent value="date">
             <DeliveryDate />
-          </TabsContent>
-          <TabsContent value="cart">
-            <div className="mt-8">
-              <h2 className="text-2xl font-semibold mb-4">カート</h2>
-              <p>カートの内容がここに表示されます。</p>
-            </div>
           </TabsContent>
         </Tabs>
 
