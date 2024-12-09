@@ -1,5 +1,36 @@
 import { squareClient } from '@/lib/square/client';
 import { NextResponse } from 'next/server';
+import { CatalogObject } from 'square';
+
+// Square APIのレスポンスオブジェクトの型定義
+type SquareObject = {
+  [key: string]: string | number | boolean | bigint | null | undefined | SquareObject | SquareObject[];
+};
+
+// BigInt値を含むオブジェクトを通常のJSONシリアライズ可能な形式に変換する関数
+function convertBigIntToString(obj: SquareObject): SquareObject {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  if (typeof obj === 'bigint') {
+    return obj.toString();
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => convertBigIntToString(item as SquareObject));
+  }
+
+  if (typeof obj === 'object') {
+    const converted: SquareObject = {};
+    for (const key in obj) {
+      converted[key] = convertBigIntToString(obj[key] as SquareObject);
+    }
+    return converted;
+  }
+
+  return obj;
+}
 
 export async function POST(request: Request) {
   try {
@@ -31,14 +62,18 @@ export async function POST(request: Request) {
 
       // カタログアイテムのみをフィルタリング
       const catalogItems = response.result.objects.filter(
-        item => item.type === 'ITEM' && item.itemData
+        (item: CatalogObject) => item.type === 'ITEM' && item.itemData
       );
 
       console.log(`Found ${catalogItems.length} catalog items`);
 
+      // BigInt値を含むデータを変換してからJSONレスポンスを返す
+      const serializedItems = convertBigIntToString(catalogItems as unknown as SquareObject) as unknown as CatalogObject[];
+      const serializedCursor = response.result.cursor;
+
       return NextResponse.json({
-        items: catalogItems,
-        cursor: response.result.cursor
+        items: serializedItems,
+        cursor: serializedCursor
       });
 
     } catch (apiError) {
