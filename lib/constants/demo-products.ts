@@ -10,207 +10,276 @@ export const DEMO_PRODUCTS: ProductGroup[] = [
     name: "餃子",
     items: [
       {
-        id: "gyoza-hayakawa",
         type: "ITEM",
+        id: "gyoza-hayakawa",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
           name: "HAYAKAWA",
           description: "当店の看板商品。ジューシーな肉汁と香ばしい皮が特徴です。",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "gyoza-hayakawa-regular",
               type: "ITEM_VARIATION",
+              id: "gyoza-hayakawa-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "gyoza-hayakawa",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "gyoza-hayakawa",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 600,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 60000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
-        },
-        imageUrl: "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=500&q=80"
+          ],
+          product_type: "REGULAR"
+        }
       },
       {
-        id: "gyoza-shiso",
         type: "ITEM",
+        id: "gyoza-shiso",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
           name: "しそ",
           description: "さっぱりとした味わい",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "gyoza-shiso-regular",
               type: "ITEM_VARIATION",
+              id: "gyoza-shiso-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "gyoza-shiso",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "gyoza-shiso",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 550,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 55000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
+          ],
+          product_type: "REGULAR"
         }
       },
       {
-        id: "gyoza-ginger",
         type: "ITEM",
+        id: "gyoza-ginger",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
           name: "生姜",
           description: "体が温まる一品",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "gyoza-ginger-regular",
               type: "ITEM_VARIATION",
+              id: "gyoza-ginger-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "gyoza-ginger",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "gyoza-ginger",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 550,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 55000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
+          ],
+          product_type: "REGULAR"
         }
       },
       {
-        id: "gyoza-age",
         type: "ITEM",
+        id: "gyoza-age",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
           name: "揚げ",
           description: "カリッと香ばしい",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "gyoza-age-regular",
               type: "ITEM_VARIATION",
+              id: "gyoza-age-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "gyoza-age",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "gyoza-age",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 600,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 60000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
+          ],
+          product_type: "REGULAR"
         }
       },
       {
-        id: "gyoza-inoshishi",
         type: "ITEM",
+        id: "gyoza-inoshishi",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
           name: "イノシシ",
           description: "ジビエ好きにおすすめ",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "gyoza-inoshishi-regular",
               type: "ITEM_VARIATION",
+              id: "gyoza-inoshishi-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "gyoza-inoshishi",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "gyoza-inoshishi",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 800,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 80000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
+          ],
+          product_type: "REGULAR"
         }
       },
       {
-        id: "gyoza-kuma",
         type: "ITEM",
+        id: "gyoza-kuma",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
           name: "クマ",
           description: "珍しい一品",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "gyoza-kuma-regular",
               type: "ITEM_VARIATION",
+              id: "gyoza-kuma-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "gyoza-kuma",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "gyoza-kuma",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 1000,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 100000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
+          ],
+          product_type: "REGULAR"
         }
       },
       {
-        id: "gyoza-mutton",
         type: "ITEM",
+        id: "gyoza-mutton",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
           name: "マトン",
           description: "羊肉の旨みたっぷり",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "gyoza-mutton-regular",
               type: "ITEM_VARIATION",
+              id: "gyoza-mutton-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "gyoza-mutton",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "gyoza-mutton",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 700,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 70000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
+          ],
+          product_type: "REGULAR"
         }
       }
     ]
@@ -219,90 +288,120 @@ export const DEMO_PRODUCTS: ProductGroup[] = [
     name: "デザート",
     items: [
       {
-        id: "dessert-apple",
         type: "ITEM",
+        id: "dessert-apple",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
           name: "フルーツ餃子（りんご）",
           description: "甘酸っぱい人気商品",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "dessert-apple-regular",
               type: "ITEM_VARIATION",
+              id: "dessert-apple-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "dessert-apple",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "dessert-apple",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 500,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 50000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
+          ],
+          product_type: "REGULAR"
         }
       },
       {
-        id: "dessert-kaki",
         type: "ITEM",
+        id: "dessert-kaki",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
           name: "フルーツ餃子（柿）",
           description: "秋の味覚",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "dessert-kaki-regular",
               type: "ITEM_VARIATION",
+              id: "dessert-kaki-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "dessert-kaki",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "dessert-kaki",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 500,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 50000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
+          ],
+          product_type: "REGULAR"
         }
       },
       {
-        id: "dessert-grape",
         type: "ITEM",
+        id: "dessert-grape",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
-          name: "フルーツ餃子（ぶどう）",
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
+          name: "���ルーツ餃子（ぶどう）",
           description: "ジューシーな一品",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "dessert-grape-regular",
               type: "ITEM_VARIATION",
+              id: "dessert-grape-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "dessert-grape",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "dessert-grape",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 500,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 50000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
+          ],
+          product_type: "REGULAR"
         }
       }
     ]
@@ -311,90 +410,120 @@ export const DEMO_PRODUCTS: ProductGroup[] = [
     name: "セット",
     items: [
       {
-        id: "set-party",
         type: "ITEM",
+        id: "set-party",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
           name: "餃子パーティ手作りセット",
           description: "みんなで楽しく餃子作り",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "set-party-regular",
               type: "ITEM_VARIATION",
+              id: "set-party-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "set-party",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "set-party",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 2000,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 200000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
+          ],
+          product_type: "REGULAR"
         }
       },
       {
-        id: "set-all",
         type: "ITEM",
+        id: "set-all",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
           name: "全種盛り合わせセット",
           description: "全種類の餃子を少しずつ",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "set-all-regular",
               type: "ITEM_VARIATION",
+              id: "set-all-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "set-all",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "set-all",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 3000,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 300000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
+          ],
+          product_type: "REGULAR"
         }
       },
       {
-        id: "set-dessert",
         type: "ITEM",
+        id: "set-dessert",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
           name: "デザート盛り合わせセット",
           description: "甘い物好きに",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "set-dessert-regular",
               type: "ITEM_VARIATION",
+              id: "set-dessert-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "set-dessert",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "set-dessert",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 1500,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 150000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
+          ],
+          product_type: "REGULAR"
         }
       }
     ]
@@ -403,119 +532,159 @@ export const DEMO_PRODUCTS: ProductGroup[] = [
     name: "グッズ",
     items: [
       {
-        id: "goods-handkerchief",
         type: "ITEM",
+        id: "goods-handkerchief",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
           name: "ハンカチ",
           description: "可愛い餃子柄",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "goods-handkerchief-regular",
               type: "ITEM_VARIATION",
+              id: "goods-handkerchief-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "goods-handkerchief",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "goods-handkerchief",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 500,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 50000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
+          ],
+          product_type: "REGULAR"
         }
       },
       {
-        id: "goods-pouch",
         type: "ITEM",
+        id: "goods-pouch",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
           name: "ポーチ",
           description: "使いやすいサイズ",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "goods-pouch-regular",
               type: "ITEM_VARIATION",
+              id: "goods-pouch-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "goods-pouch",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "goods-pouch",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 1000,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 100000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
+          ],
+          product_type: "REGULAR"
         }
       },
       {
-        id: "goods-lard",
         type: "ITEM",
+        id: "goods-lard",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
           name: "ラード",
           description: "当店秘伝のラード",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "goods-lard-regular",
               type: "ITEM_VARIATION",
+              id: "goods-lard-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "goods-lard",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "goods-lard",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 800,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 80000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
+          ],
+          product_type: "REGULAR"
         }
       },
       {
-        id: "goods-yakumi",
         type: "ITEM",
+        id: "goods-yakumi",
         version: 1,
-        isDeleted: false,
-        presentAtAllLocations: true,
-        itemData: {
+        updated_at: "2024-02-09T00:00:00.000Z",
+        created_at: "2024-02-09T00:00:00.000Z",
+        is_deleted: false,
+        present_at_all_locations: true,
+        item_data: {
           name: "薬味",
           description: "餃子に合う薬味セット",
-          availableOnline: true,
+          is_taxable: true,
           variations: [
             {
-              id: "goods-yakumi-regular",
               type: "ITEM_VARIATION",
+              id: "goods-yakumi-regular",
               version: 1,
-              itemVariationData: {
-                itemId: "goods-yakumi",
+              updated_at: "2024-02-09T00:00:00.000Z",
+              created_at: "2024-02-09T00:00:00.000Z",
+              is_deleted: false,
+              present_at_all_locations: true,
+              item_variation_data: {
+                item_id: "goods-yakumi",
                 name: "レギュラー",
-                priceMoney: {
-                  amount: 300,
+                ordinal: 0,
+                pricing_type: "FIXED_PRICING",
+                price_money: {
+                  amount: 30000,
                   currency: "JPY"
                 },
-                pricing_type: "FIXED_PRICING",
-                available: true
+                track_inventory: false,
+                sellable: true,
+                stockable: true
               }
             }
-          ]
+          ],
+          product_type: "REGULAR"
         }
       }
     ]

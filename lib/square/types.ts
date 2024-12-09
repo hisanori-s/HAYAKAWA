@@ -1,67 +1,67 @@
-import { Money } from 'square';
-
-export interface SquareProductVariation {
-  id: string;
-  type: string;
-  version: number;
-  itemVariationData: {
-    itemId: string;
-    name: string;
-    priceMoney: Money;
-    pricing_type: string;
-    available: boolean;
-    ordinal?: number;
-  };
-}
-
 export interface SquareProduct {
+  type: string;
   id: string;
-  type: 'ITEM';
   version: number;
-  isDeleted: boolean;
-  presentAtAllLocations: boolean;
-  itemData: {
+  updated_at: string;
+  created_at: string;
+  is_deleted: boolean;
+  present_at_all_locations: boolean;
+  item_data: {
     name: string;
     description?: string;
-    abbreviation?: string;
-    labelColor?: string;
-    availableOnline?: boolean;
-    availableForPickup?: boolean;
-    availableElectronically?: boolean;
-    categoryId?: string;
-    taxIds?: string[];
-    variations: SquareProductVariation[];
-    imageIds?: string[];
-    productType?: 'REGULAR' | 'GIFT_CARD' | 'APPOINTMENTS_SERVICE';
-    skipModifierScreen?: boolean;
-    ecomEnabled?: boolean;
+    is_taxable: boolean;
+    variations?: Array<{
+      type: string;
+      id: string;
+      version: number;
+      updated_at: string;
+      created_at: string;
+      is_deleted: boolean;
+      present_at_all_locations: boolean;
+      item_variation_data: {
+        item_id: string;
+        name: string;
+        ordinal?: number;
+        pricing_type: string;
+        price_money: {
+          amount: number;
+          currency: string;
+        };
+        track_inventory?: boolean;
+        sellable?: boolean;
+        stockable?: boolean;
+        location_overrides?: Array<{
+          location_id: string;
+          sold_out?: boolean;
+        }>;
+      };
+    }>;
+    product_type: string;
+    categories?: Array<{
+      id: string;
+      ordinal?: number;
+    }>;
+    description_html?: string;
+    description_plaintext?: string;
+    is_archived?: boolean;
   };
-  // UI表示用の追加フィールド
-  imageUrl?: string;
-  price?: number; // 最初のバリエーションの価格をキャッシュ
 }
 
-export interface CheckoutSession {
+export interface CategoryNode {
   id: string;
-  url: string;
-  expiresAt: string;
-  order: {
-    id: string;
-    locationId: string;
-    customerId?: string;
-    lineItems: Array<{
-      quantity: string;
-      catalogObjectId: string;
-      modifiers?: Array<{
-        catalogObjectId: string;
-      }>;
-      appliedTaxes?: Array<{
-        taxUid: string;
-      }>;
-    }>;
-    taxes?: Array<{
-      uid: string;
-      catalogObjectId: string;
-    }>;
+  name: string;
+  items: SquareProduct[];
+}
+
+export interface CategoryResponse {
+  categories: CategoryNode[];
+}
+
+export interface SquareError {
+  error: string;
+  details?: {
+    message: string;
+    type?: string;
+    code?: string;
   };
 }
