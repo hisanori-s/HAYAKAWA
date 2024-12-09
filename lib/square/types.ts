@@ -1,67 +1,18 @@
-export interface SquareProduct {
-  type: string;
-  id: string;
-  version: number;
-  updated_at: string;
-  created_at: string;
-  is_deleted: boolean;
-  present_at_all_locations: boolean;
-  item_data: {
-    name: string;
-    description?: string;
-    is_taxable: boolean;
-    variations?: Array<{
-      type: string;
-      id: string;
-      version: number;
-      updated_at: string;
-      created_at: string;
-      is_deleted: boolean;
-      present_at_all_locations: boolean;
-      item_variation_data: {
-        item_id: string;
-        name: string;
-        ordinal?: number;
-        pricing_type: string;
-        price_money: {
-          amount: number;
-          currency: string;
-        };
-        track_inventory?: boolean;
-        sellable?: boolean;
-        stockable?: boolean;
-        location_overrides?: Array<{
-          location_id: string;
-          sold_out?: boolean;
-        }>;
-      };
-    }>;
-    product_type: string;
-    categories?: Array<{
-      id: string;
-      ordinal?: number;
-    }>;
-    description_html?: string;
-    description_plaintext?: string;
-    is_archived?: boolean;
-  };
-}
+import { CatalogObject } from 'square';
 
-export interface CategoryNode {
+// カスタム型定義（必要な場合のみ）
+export type ExtendedCatalogObject = CatalogObject & {
+  imageUrl?: string;
+};
+
+export type CartItem = {
   id: string;
   name: string;
-  items: SquareProduct[];
-}
+  price: number; // 円単位（Square APIの返す銭単位から変換済み）
+  quantity: number;
+};
 
-export interface CategoryResponse {
-  categories: CategoryNode[];
-}
-
-export interface SquareError {
-  error: string;
-  details?: {
-    message: string;
-    type?: string;
-    code?: string;
-  };
-}
+export type ProductGroup = {
+  name: string;
+  items: CatalogObject[];
+};

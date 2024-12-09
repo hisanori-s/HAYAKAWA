@@ -1,5 +1,5 @@
 // lib/square.ts
-import { Client, Environment } from 'square';
+import { Client, Environment, CatalogObject } from 'square';
 
 if (!process.env.SQUARE_ACCESS_TOKEN) {
   throw new Error('SQUARE_ACCESS_TOKEN is not defined');
@@ -11,8 +11,8 @@ if (!process.env.SQUARE_LOCATION_ID) {
 
 export const squareClient = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
-  environment: process.env.NODE_ENV === 'production' 
-    ? Environment.Production 
+  environment: process.env.NODE_ENV === 'production'
+    ? Environment.Production
     : Environment.Sandbox
 });
 
@@ -29,34 +29,63 @@ export type CatalogItem = {
   }>;
 };
 
-export async function fetchCatalogItems(): Promise<CatalogItem[]> {
+// Square APIのレスポンスを型安全に変換する
+export const convertSquareResponse = (item: CatalogObject) => {
+  if (!item.itemData) {
+    throw new Error('Invalid catalog item: missing itemData');
+  }
+
+  return {
+    id: item.id,
+    type: item.type,
+    version: Number(item.version || 0),
+    updatedAt: item.updatedAt || new Date().toISOString(),
+    isDeleted: item.isDeleted || false,
+    presentAtAllLocations: item.presentAtAllLocations || true,
+    itemData: {
+      name: item.itemData.name || '',
+      description: item.itemData.description,
+      isTaxable: item.itemData.isTaxable || false,
+      variations: item.itemData.variations?.map(v => ({
+        type: v.type,
+        id: v.id,
+        version: Number(v.version || 0),
+        updatedAt: v.updatedAt || new Date().toISOString(),
+        isDeleted: v.isDeleted || false,
+        presentAtAllLocations: v.presentAtAllLocations || true,
+        itemVariationData: {
+          itemId: v.itemVariationData?.itemId || '',
+          name: v.itemVariationData?.name || '',
+          ordinal: v.itemVariationData?.ordinal,
+          pricingType: v.itemVariationData?.pricingType || 'FIXED_PRICING',
+          priceMoney: {
+            amount: Number(v.itemVariationData?.priceMoney?.amount || 0),
+            currency: v.itemVariationData?.priceMoney?.currency || 'JPY'
+          },
+          trackInventory: v.itemVariationData?.trackInventory,
+          sellable: v.itemVariationData?.sellable,
+          stockable: v.itemVariationData?.stockable
+        }
+      })) || [],
+      productType: item.itemData.productType || 'REGULAR',
+      categories: item.itemData.categories?.map(c => ({
+        id: c.id || '',
+        ordinal: c.ordinal
+      })) || [],
+      descriptionHtml: item.itemData.descriptionHtml || undefined,
+      descriptionPlaintext: item.itemData.descriptionPlaintext || undefined,
+      isArchived: item.itemData.isArchived || false
+    }
+  };
+};
+
+export async function fetchCatalogItems(): Promise<CatalogObject[]> {
   try {
     const { result } = await squareClient.catalogApi.listCatalog(undefined, 'ITEM');
+
     if (!result.objects) return [];
 
-    return result.objects.map(item => {
-      const itemData = item.itemData;
-      if (!itemData) return null;
-
-      const variation = itemData.variations?.[0]?.itemVariationData;
-      const price = variation?.priceMoney?.amount ?? 0;
-
-      return {
-        id: item.id,
-        name: itemData.name ?? '',
-        description: itemData.description ?? '',
-        price: price / 100,
-        imageUrl: itemData.imageIds?.[0] 
-          ? `/api/images/${itemData.imageIds[0]}` 
-          : undefined,
-        variations: itemData.variations?.map(v => ({
-          id: v.id,
-          name: v.itemVariationData?.name ?? '',
-          price: (v.itemVariationData?.priceMoney?.amount ?? 0) / 100
-        }))
-      };
-    }).filter((item): item is CatalogItem => item !== null);
-
+    return result.objects;
   } catch (error) {
     console.error('Error fetching catalog items:', error);
     throw error;
