@@ -1,97 +1,112 @@
-# Square商品表示機能の実装における型エラーの解決
+# Square API接続問題の解決
 
-## 目指す方向
-1. POSTMANで取得した実際のSquare APIレスポンス形式に完全に合わせた実装
-2. デモデータとSquare商品の両方が正しく表示される状態の実現
-3. 型安全性を保ちながらのデータ変換の実装
+## 現状の問題
+1. Square APIへの接続が確立できていない
+   - APIリクエストがSquareサーバーに到達していない
+   - ローカル環境からの接続に問題の可能性
+   - 環境変数は正しく設定されている
 
-## 現状の問題点
-1. 型の不一致
-   - `CatalogObject[]` と 期待される型の不一致
-   - `itemVariationData` の型構造の不一致
-   - `pricing_type` プロパティの型定義の問題
+2. デバッグ情報が不足
+   - エラーの具体的な原因が特定できていない
+   - 接続試行の詳細が不明確
 
-2. APIエンドポイントの500エラー
-   - `/api/square/catalog` が Internal Server Error を返している
-   - データ変換処理での型エラーが原因
+## 実装すべきテストエンドポイント
 
-## 参照すべきファイル
-1. `app/api/square/catalog/route.ts`
-   - APIエンドポイントの実装
-   - データ変換ロジック
+1. 環境変数確認用エンドポイント
+```typescript
+// app/api/square/env-check/route.ts
+import { NextResponse } from 'next/server';
 
-2. `lib/square/types.ts`
-   - 型定義ファイル
-   - `SquareProduct` インターフェース
-
-3. `lib/constants/demo-products.ts`
-   - デモデータの構造
-   - 型エラーが発生している箇所
-
-4. `components/product-list.tsx`
-   - 商品表示コンポーネント
-   - データの使用箇所
-
-## 提供された情報
-1. POSTMANで取得した実際のSquare APIレスポンス:
-```json
-{
-    "items": [
-        {
-            "type": "ITEM",
-            "id": "YFXLXTAUE4IUC6NGM2O642ND",
-            "version": 1733645237575,
-            "item_data": {
-                "name": "HAYAKAWA",
-                "description": "ベーシックな薄皮餃子",
-                "variations": [
-                    {
-                        "type": "ITEM_VARIATION",
-                        "id": "VDSZ42UAI2CFMLKZCSAJBGPE",
-                        "item_variation_data": {
-                            "item_id": "YFXLXTAUE4IUC6NGM2O642ND",
-                            "name": "Regular",
-                            "price_money": {
-                                "amount": 15000,
-                                "currency": "JPY"
-                            }
-                        }
-                    }
-                ]
-            }
-        }
-    ]
+export async function GET() {
+  return NextResponse.json({
+    environment: process.env.SQUARE_ENVIRONMENT,
+    hasAccessToken: !!process.env.SQUARE_ACCESS_TOKEN,
+    locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID
+  });
 }
 ```
 
-2. 現在発生している型エラー:
+2. Square API基本接続テスト
 ```typescript
-// route.ts のエラー
-型 'CatalogObject[]' を型 '{ type: string; id: string; itemVariationData: { itemId: string; name: string; priceMoney: { amount: number; currency: string; }; }; }[]' に割り当てることはできません。
+// app/api/square/test/route.ts
+import { squareClient } from '@/lib/square/client';
+import { NextResponse } from 'next/server';
 
-// demo-products.ts のエラー
-オブジェクト リテラルは既知のプロパティのみ指定できます。'pricing_type' は型 '{ itemId: string; name: string; priceMoney: { amount: number; currency: string; }; }' に存在しません。
+export async function GET() {
+  try {
+    console.log('Testing Square API connection...');
+    const response = await squareClient.locationsApi.listLocations();
+
+    return NextResponse.json({
+      success: true,
+      message: 'Connection successful',
+      locations: response.result.locations
+    });
+  } catch (error) {
+    console.error('Square API Test Error:', error);
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: error
+    }, { status: 500 });
+  }
+}
 ```
 
-## 解決のステップ
-1. 型定義の修正
-   - POSTMANレスポンスの構造に完全に合わせた型定義の作成
-   - `CatalogObject` と独自の型定義の整合性確保
+3. 直接HTTPリクエストテスト
+```typescript
+// app/api/square/direct-test/route.ts
+import { NextResponse } from 'next/server';
 
-2. データ変換ロジックの修正
-   - APIレスポンスからフロントエンド用のデータ構造への変換処理の修正
-   - 必要なプロパティの適切なマッピング
+export async function GET() {
+  try {
+    const response = await fetch(
+      'https://connect.squareupsandbox.com/v2/locations',
+      {
+        headers: {
+          'Square-Version': '2024-11-20',
+          'Authorization': `Bearer ${process.env.SQUARE_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
 
-3. デモデータの構造修正
-   - Square APIのレスポンス形式に合わせたデモデータの構造変更
-   - 不要なプロパティの削除または必要なプロパティの追加
+    const data = await response.json();
+    return NextResponse.json({
+      success: true,
+      rawResponse: data
+    });
+  } catch (error) {
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
+  }
+}
+```
 
-## 必要な追加情報
-1. `lib/square/client.ts` の実装内容
-2. デモデータの完全な構造
-3. Square APIの型定義ファイル（`square`パッケージの型定義）
+## 実装手順
+1. 上記3つのテストエンドポイントを作成
+2. 各エンドポイントを順番にテスト
+3. 結果を分析してSquare API接続の問題を特定
+
+## 確認すべきポイント
+1. 環境変数の読み込み状態
+2. Square SDKの初期化パラメータ
+3. ネットワーク接続状態
+4. エラーメッセージの詳細
+
+## 必要なファイル
+1. `.env.local` - 環境変数の設定確認
+2. `lib/square/client.ts` - Square SDKの設定確認
 
 ## 注意点
-- 型の安全性を最優先すること
-- POSTMANのレスポンス形式を正としてすべての型を合わせること
-- デバッグ情報を十分に出力すること
+- 各テストエンドポイントで十分なログ出力を行う
+- エラーハンドリングを適切に実装する
+- 環境変数の機密情報が露出しないよう注意する
+
+## 次のステップ
+1. テストエンドポイントの実装
+2. POSTMANでの動作確認
+3. エラー原因の特定と修正
+4. 本来のカタログAPIの修正

@@ -4,7 +4,13 @@
 │   │   ├── catalog
 │   │   │   └── route.ts
 │   │   └── square
-│   │       └── checkout
+│   │       ├── checkout
+│   │       │   └── route.ts
+│   │       ├── env-check
+│   │       │   └── route.ts
+│   │       ├── test
+│   │       │   └── route.ts
+│   │       └── direct-test
 │   │           └── route.ts
 │   ├── cart
 │   ├── order
@@ -52,7 +58,7 @@
 ├── _STRUCTURE.md
 ├── components.json
 ├── next-env.d.ts
-├── next.config.mjs
+├��─ next.config.mjs
 ├── package-lock.json
 ├── package.json
 ├── postcss.config.mjs
