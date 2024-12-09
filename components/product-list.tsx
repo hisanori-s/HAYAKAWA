@@ -55,7 +55,11 @@ export function ProductList() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
-          }
+          },
+          body: JSON.stringify({
+            productTypes: ['REGULAR'],
+            limit: 100
+          })
         });
         const data: SquareApiResponse = await response.json();
 
