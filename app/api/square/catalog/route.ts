@@ -1,8 +1,12 @@
 import { squareClient } from '@/lib/square/client';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function POST() {
   try {
+    console.log('Starting Square API request...');
+    console.log('Environment:', process.env.SQUARE_ENVIRONMENT);
+    console.log('Access Token:', process.env.SQUARE_ACCESS_TOKEN ? 'Present' : 'Missing');
+
     console.log('Fetching Square catalog items...');
     const response = await squareClient.catalogApi.searchCatalogItems({
       productTypes: ['REGULAR'],

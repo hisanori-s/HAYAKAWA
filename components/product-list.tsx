@@ -49,10 +49,14 @@ export function ProductList() {
 
   useEffect(() => {
     const fetchProducts = async () => {
+      setIsLoading(true);
       try {
-        setError(null);
-        setIsLoading(true);
-        const response = await fetch('/api/square/catalog');
+        const response = await fetch('/api/square/catalog', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
         const data: SquareApiResponse = await response.json();
 
         if (data.error) {
