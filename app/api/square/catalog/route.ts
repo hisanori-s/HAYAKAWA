@@ -3,14 +3,19 @@ import { NextResponse } from 'next/server';
 import { CatalogObject } from 'square';
 
 // Square APIのレスポンスオブジェクトの型定義
-type SquareObject = {
-  [key: string]: string | number | boolean | bigint | null | undefined | SquareObject | SquareObject[];
+type JsonValue = string | number | boolean | null | JsonObject | JsonArray;
+type JsonObject = { [key: string]: JsonValue };
+type JsonArray = JsonValue[];
+
+// オブジェクトのキー参照用の型
+type ObjectWithStringKeys = {
+  [key: string]: unknown;
 };
 
 // BigInt値を含むオブジェクトを通常のJSONシリアライズ可能な形式に変換する関数
-function convertBigIntToString(obj: SquareObject): SquareObject {
+function convertBigIntToString(obj: unknown): JsonValue {
   if (obj === null || obj === undefined) {
-    return obj;
+    return null;
   }
 
   if (typeof obj === 'bigint') {
@@ -18,18 +23,25 @@ function convertBigIntToString(obj: SquareObject): SquareObject {
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item => convertBigIntToString(item as SquareObject));
+    return obj.map(item => convertBigIntToString(item));
   }
 
   if (typeof obj === 'object') {
-    const converted: SquareObject = {};
-    for (const key in obj) {
-      converted[key] = convertBigIntToString(obj[key] as SquareObject);
+    const converted: JsonObject = {};
+    const objWithKeys = obj as ObjectWithStringKeys;
+    for (const key in objWithKeys) {
+      if (Object.prototype.hasOwnProperty.call(objWithKeys, key)) {
+        converted[key] = convertBigIntToString(objWithKeys[key]);
+      }
     }
     return converted;
   }
 
-  return obj;
+  if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') {
+    return obj;
+  }
+
+  return null;
 }
 
 export async function POST(request: Request) {
@@ -68,7 +80,7 @@ export async function POST(request: Request) {
       console.log(`Found ${catalogItems.length} catalog items`);
 
       // BigInt値を含むデータを変換してからJSONレスポンスを返す
-      const serializedItems = convertBigIntToString(catalogItems as unknown as SquareObject) as unknown as CatalogObject[];
+      const serializedItems = convertBigIntToString(catalogItems);
       const serializedCursor = response.result.cursor;
 
       return NextResponse.json({

@@ -50,3 +50,47 @@ export async function createPayment(paymentData: {
     throw error;
   }
 }
+
+// カテゴリ情報のみを取得する関数
+export async function fetchCategories() {
+  try {
+    const { result } = await squareClient.catalogApi.listCatalog(
+      undefined,
+      'CATEGORY'
+    );
+
+    console.log('Categories response:', JSON.stringify(result, null, 2));
+    return result.objects || [];
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    throw error;
+  }
+}
+
+// カタログ情報取得用の関数を修正
+export async function fetchCatalogWithCategories() {
+  try {
+    // まずカテゴリを取得
+    const categories = await fetchCategories();
+    console.log('Fetched categories:', categories.map(cat => ({
+      id: cat.id,
+      name: cat.categoryData?.name
+    })));
+
+    // 次に商品を取得
+    const { result: itemsResult } = await squareClient.catalogApi.searchCatalogItems({
+      limit: 100
+    });
+
+    // デバッグ用にログ出力
+    console.log('Items result:', JSON.stringify(itemsResult, null, 2));
+
+    return {
+      items: itemsResult.items || [],
+      categories: categories
+    };
+  } catch (error) {
+    console.error('Error fetching catalog:', error);
+    throw error;
+  }
+}

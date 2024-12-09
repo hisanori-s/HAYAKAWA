@@ -2,6 +2,7 @@
 ├── app
 │   ├── api
 │   │   ├── catalog
+│   │   │   ├── api-routes.js
 │   │   │   └── route.ts
 │   │   └── square
 │   │       ├── checkout
@@ -10,10 +11,15 @@
 │   │       │   └── route.ts
 │   │       ├── test
 │   │       │   └── route.ts
+│   │       ├── catalog
+│   │       │   └── route.ts
 │   │       └── direct-test
 │   │           └── route.ts
 │   ├── cart
+│   │   └── page.tsx
 │   ├── order
+│   │   └── complete
+│   │       └── page.tsx
 │   ├── fonts
 │   │   ├── GeistMonoVF.woff
 │   │   └── GeistVF.woff
@@ -48,6 +54,10 @@
 │   │   └── cart.ts
 │   └── utils.ts
 ├── public
+│   └── images
+│       ├── global
+│       └── placeholders
+│           └── product-placeholder.jpg
 ├── .cursorrules
 ├── .editorconfig
 ├── .env.local
@@ -58,7 +68,7 @@
 ├── _STRUCTURE.md
 ├── components.json
 ├── next-env.d.ts
-├��─ next.config.mjs
+├── next.config.mjs
 ├── package-lock.json
 ├── package.json
 ├── postcss.config.mjs

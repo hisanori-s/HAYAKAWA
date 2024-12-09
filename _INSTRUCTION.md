@@ -1,112 +1,54 @@
-# Square API接続問題の解決
+# Square ECサイト開発 - カテゴリ表示と画像実装の続き
 
-## 現状の問題
-1. Square APIへの接続が確立できていない
-   - APIリクエストがSquareサーバーに到達していない
-   - ローカル環境からの接続に問題の可能性
-   - 環境変数は正しく設定されている
+## 現在の状況
+1. 商品一覧からの画像表示を削除し、モーダルのみに表示するように修正
+2. プレースホルダー画像の実装完了
+3. カテゴリ情報取得の基本実装は完了
 
-2. デバッグ情報が不足
-   - エラーの具体的な原因が特定できていない
-   - 接続試行の詳細が不明確
+## 発生している問題
+1. カテゴリ情報の取得
+   - APIレスポンスにカテゴリIDはあるがカテゴリ名が含まれていない
+   - カテゴリ情報を別途取得する必要がある
+   - カテゴリ名とIDの対応表を作成する必要がある
 
-## 実装すべきテストエンドポイント
+## 次の実装タスク
 
-1. 環境変数確認用エンドポイント
-```typescript
-// app/api/square/env-check/route.ts
-import { NextResponse } from 'next/server';
+### 1. カテゴリ情報の取得改善
+- カテゴリ情報専用のAPI呼び出しを実装
+- カテゴリIDと名前の対応表を作成
+- 商品データとカテゴリ情報の紐付け処理の実装
 
-export async function GET() {
-  return NextResponse.json({
-    environment: process.env.SQUARE_ENVIRONMENT,
-    hasAccessToken: !!process.env.SQUARE_ACCESS_TOKEN,
-    locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID
-  });
-}
-```
+### 2. カテゴリ別表示の実装
+- 取得したカテゴリ情報を使用して商品をグループ化
+- UIでカテゴリブロックとして表示
+- カテゴリなし商品の適切な処理
 
-2. Square API基本接続テスト
-```typescript
-// app/api/square/test/route.ts
-import { squareClient } from '@/lib/square/client';
-import { NextResponse } from 'next/server';
-
-export async function GET() {
-  try {
-    console.log('Testing Square API connection...');
-    const response = await squareClient.locationsApi.listLocations();
-
-    return NextResponse.json({
-      success: true,
-      message: 'Connection successful',
-      locations: response.result.locations
-    });
-  } catch (error) {
-    console.error('Square API Test Error:', error);
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      details: error
-    }, { status: 500 });
-  }
-}
-```
-
-3. 直接HTTPリクエストテスト
-```typescript
-// app/api/square/direct-test/route.ts
-import { NextResponse } from 'next/server';
-
-export async function GET() {
-  try {
-    const response = await fetch(
-      'https://connect.squareupsandbox.com/v2/locations',
-      {
-        headers: {
-          'Square-Version': '2024-11-20',
-          'Authorization': `Bearer ${process.env.SQUARE_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    const data = await response.json();
-    return NextResponse.json({
-      success: true,
-      rawResponse: data
-    });
-  } catch (error) {
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
-  }
-}
-```
-
-## 実装手順
-1. 上記3つのテストエンドポイントを作成
-2. 各エンドポイントを順番にテスト
-3. 結果を分析してSquare API接続の問題を特定
-
-## 確認すべきポイント
-1. 環境変数の読み込み状態
-2. Square SDKの初期化パラメータ
-3. ネットワーク接続状態
-4. エラーメッセージの詳細
+### 3. デバッグ情報の充実
+- カテゴリ情報の取得状況の確認
+- 商品とカテゴリの紐付け状況の確認
+- APIレスポンスの詳細表示
 
 ## 必要なファイル
-1. `.env.local` - 環境変数の設定確認
-2. `lib/square/client.ts` - Square SDKの設定確認
+1. `app/api/square/catalog/route.ts` - カテゴリ情報取得APIの実装確認
+2. `lib/square/client.ts` - カテゴリ情報取得関数の実装確認
+3. `components/product-list.tsx` - カテゴリ表示の実装
 
-## 注意点
-- 各テストエンドポイントで十分なログ出力を行う
-- エラーハンドリングを適切に実装する
-- 環境変数の機密情報が露出しないよう注意する
+## 技術的な注意点
+1. Square APIの仕様
+   - カテゴリ情報は別APIで取得する必要がある
+   - カテゴリIDと名前の対応関係の管理が必要
+
+2. データの整合性
+   - カテゴリ情報と商品データの同期
+   - 未分類商品の適切な処理
+
+3. デバッグ対応
+   - APIレスポンスの詳細ログ
+   - カテゴリ情報の取得状況の確認
+   - データの紐付け状況の可視化
 
 ## 次のステップ
-1. テストエンドポイントの実装
-2. POSTMANでの動作確認
-3. エラー原因の特定と修正
-4. 本来のカタログAPIの修正
+1. カテゴリ情報取得APIの実装
+2. カテゴリ情報と商品データの紐付け
+3. カテゴリ別表示のUI実装
+4. デバッグ情報の拡充
