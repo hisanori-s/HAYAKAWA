@@ -287,6 +287,30 @@ interface ProductModalProps {
 
 function ProductModal({ product, onAddToCart }: ProductModalProps) {
   const [quantity, setQuantity] = useState(1);
+  const [imageError, setImageError] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    // 画像URLを取得
+    const fetchImage = async () => {
+      if (product.imageIds?.[0]) {
+        try {
+          const response = await fetch(`/api/square/image/${product.imageIds[0]}`);
+          const data = await response.json();
+          if (data.success && data.url) {
+            setImageUrl(data.url);
+          } else {
+            setImageError(true);
+          }
+        } catch (error) {
+          console.error('Error fetching image:', error);
+          setImageError(true);
+        }
+      }
+    };
+
+    fetchImage();
+  }, [product.imageIds]);
 
   const handleAddToCart = () => {
     onAddToCart({
@@ -301,10 +325,12 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
     <div className="space-y-4">
       <div className="relative aspect-square w-full">
         <Image
-          src={product.imageUrl || '/images/placeholders/product-placeholder.jpg'}
+          src={imageError ? '/images/placeholders/product-placeholder.jpg' : (imageUrl || '/images/placeholders/product-placeholder.jpg')}
           alt={product.name || '商品画像'}
           fill
           className="object-cover rounded-md"
+          onError={() => setImageError(true)}
+          priority
         />
       </div>
       <div className="text-xs text-gray-500 space-y-1 bg-gray-50 p-2 rounded">
@@ -314,6 +340,9 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
         )}
         {product.imageIds && product.imageIds.length > 0 && (
           <p>画像ID: {product.imageIds.join(', ')}</p>
+        )}
+        {imageError && (
+          <p className="text-yellow-600">※ 画像の読み込みに失敗しました</p>
         )}
       </div>
       <p className="text-lg font-semibold">{formatPrice(product.price)}円</p>
