@@ -307,16 +307,15 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
           className="object-cover rounded-md"
         />
       </div>
-      {(product.categoryId || product.imageIds) && (
-        <div className="text-xs text-gray-500 space-y-1 bg-gray-50 p-2 rounded">
-          {product.categoryId && (
-            <p>カテゴリID: {product.categoryId}</p>
-          )}
-          {product.imageIds && product.imageIds.length > 0 && (
-            <p>画像ID: {product.imageIds.join(', ')}</p>
-          )}
-        </div>
-      )}
+      <div className="text-xs text-gray-500 space-y-1 bg-gray-50 p-2 rounded">
+        <p>商品ID: {product.id}</p>
+        {product.categoryId && (
+          <p>カテゴリID: {product.categoryId}</p>
+        )}
+        {product.imageIds && product.imageIds.length > 0 && (
+          <p>画像ID: {product.imageIds.join(', ')}</p>
+        )}
+      </div>
       <p className="text-lg font-semibold">{formatPrice(product.price)}円</p>
       <p className="text-sm text-gray-500">{product.description}</p>
       <div className="flex items-center space-x-2">

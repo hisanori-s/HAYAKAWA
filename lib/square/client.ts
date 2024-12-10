@@ -154,12 +154,22 @@ export async function fetchCatalogWithCategories() {
       return { categories: {}, products: [] };
     }
 
+    // 画像データの確認用デバッグログ
+    const imageObjects = result.objects.filter(obj => obj.type === 'IMAGE');
+    console.log('Found image objects:', imageObjects.map(img => ({
+      id: img.id,
+      type: img.type,
+      hasImageData: !!img.imageData,
+      url: img.imageData?.url
+    })));
+
     // カタログデータを処理
     const processedData = processCatalogData(result);
 
     console.log('Processed catalog data:', {
       categoriesCount: Object.keys(processedData.categories).length,
-      productsCount: processedData.products.length
+      productsCount: processedData.products.length,
+      productsWithImages: processedData.products.filter(p => p.imageIds && p.imageIds.length > 0).length
     });
 
     return processedData;
