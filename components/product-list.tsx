@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, CarouselApi } from "@/components/ui/carousel"
 import Image from "next/image"
 import { DEMO_PRODUCTS } from '@/lib/constants/demo-products'
 import type { CartItem } from '@/lib/square/types'
@@ -288,28 +289,43 @@ interface ProductModalProps {
 function ProductModal({ product, onAddToCart }: ProductModalProps) {
   const [quantity, setQuantity] = useState(1);
   const [imageError, setImageError] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
 
   useEffect(() => {
-    // 画像URLを取得
-    const fetchImage = async () => {
-      if (product.imageIds?.[0]) {
+    if (!api) {
+      return;
+    }
+
+    setCurrent(api.selectedScrollSnap());
+
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap());
+    });
+  }, [api]);
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      if (product.imageIds && product.imageIds.length > 0) {
         try {
-          const response = await fetch(`/api/square/image/${product.imageIds[0]}`);
-          const data = await response.json();
-          if (data.success && data.url) {
-            setImageUrl(data.url);
-          } else {
-            setImageError(true);
-          }
+          const urls = await Promise.all(
+            product.imageIds.map(async (id) => {
+              const response = await fetch(`/api/square/image/${id}`);
+              const data = await response.json();
+              return data.success ? data.url : null;
+            })
+          );
+          const validUrls = urls.filter((url): url is string => url !== null);
+          setImageUrls(validUrls);
         } catch (error) {
-          console.error('Error fetching image:', error);
+          console.error('Error fetching images:', error);
           setImageError(true);
         }
       }
     };
 
-    fetchImage();
+    fetchImages();
   }, [product.imageIds]);
 
   const handleAddToCart = () => {
@@ -324,14 +340,58 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
   return (
     <div className="space-y-4">
       <div className="relative aspect-square w-full">
-        <Image
-          src={imageError ? '/images/placeholders/product-placeholder.jpg' : (imageUrl || '/images/placeholders/product-placeholder.jpg')}
-          alt={product.name || '商品画像'}
-          fill
-          className="object-cover rounded-md"
-          onError={() => setImageError(true)}
-          priority
-        />
+        {imageUrls.length > 0 ? (
+          <div className="relative w-full h-full">
+            <Carousel
+              className="w-full h-full"
+              setApi={setApi}
+            >
+              <CarouselContent>
+                {imageUrls.map((url, index) => (
+                  <CarouselItem key={index}>
+                    <div className="relative aspect-square w-full">
+                      <Image
+                        src={url}
+                        alt={`${product.name} - Image ${index + 1}`}
+                        fill
+                        className="object-cover rounded-md"
+                        priority={index === 0}
+                      />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              {imageUrls.length > 1 && (
+                <>
+                  <CarouselPrevious className="left-2" />
+                  <CarouselNext className="right-2" />
+                  <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
+                    {imageUrls.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => api?.scrollTo(index)}
+                        className={`w-2 h-2 rounded-full transition-colors ${
+                          index === current
+                            ? 'bg-white'
+                            : 'bg-white/50 hover:bg-white/75'
+                        }`}
+                        aria-label={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </Carousel>
+          </div>
+        ) : (
+          <Image
+            src="/images/placeholders/product-placeholder.jpg"
+            alt={product.name || '商品画像'}
+            fill
+            className="object-cover rounded-md"
+            priority
+          />
+        )}
       </div>
       <div className="text-xs text-gray-500 space-y-1 bg-gray-50 p-2 rounded">
         <p>商品ID: {product.id}</p>
