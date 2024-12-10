@@ -13,6 +13,9 @@
 │   │       │   └── route.ts
 │   │       ├── catalog
 │   │       │   └── route.ts
+│   │       ├── image
+│   │       │   └── [imageId]
+│   │       │       └── route.ts
 │   │       └── direct-test
 │   │           └── route.ts
 │   ├── cart
