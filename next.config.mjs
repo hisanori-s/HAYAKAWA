@@ -6,6 +6,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'items-images-sandbox.s3.us-west-2.amazonaws.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'items-images.s3.us-west-2.amazonaws.com',
+      }
     ],
   },
 };

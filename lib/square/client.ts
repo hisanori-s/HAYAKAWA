@@ -181,19 +181,44 @@ export async function fetchCatalogWithCategories() {
 
 // 画像情報取得用の関数
 export async function fetchImageUrl(imageId: string) {
+  console.log('fetchImageUrl called with imageId:', imageId);
+
   try {
+    console.log('Calling Square API to retrieve catalog object...');
     const { result } = await squareClient.catalogApi.retrieveCatalogObject(
       imageId,
       true // includeRelatedObjects
     );
 
-    if (!result.object?.imageData?.url) {
-      throw new Error('Image URL not found');
+    console.log('Square API Response:', {
+      hasResult: !!result,
+      objectType: result.object?.type,
+      hasImageData: !!result.object?.imageData,
+      imageUrl: result.object?.imageData?.url,
+      relatedObjectsCount: result.relatedObjects?.length
+    });
+
+    if (!result.object) {
+      throw new Error('No catalog object found');
     }
 
+    if (result.object.type !== 'IMAGE') {
+      throw new Error(`Invalid object type: ${result.object.type}`);
+    }
+
+    if (!result.object.imageData?.url) {
+      throw new Error('Image URL not found in response');
+    }
+
+    console.log('Successfully retrieved image URL');
     return result.object.imageData.url;
   } catch (error) {
-    console.error('Error fetching image:', error);
+    console.error('Error in fetchImageUrl:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+      imageId,
+      timestamp: new Date().toISOString()
+    });
     throw error;
   }
 }
