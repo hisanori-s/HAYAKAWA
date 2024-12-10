@@ -51,6 +51,8 @@ interface DisplayProduct {
   description?: string | null;
   price: number;
   imageUrl?: string;
+  categoryId?: string | null;
+  imageIds?: string[];
 }
 
 export function ProductList() {
@@ -172,7 +174,9 @@ export function ProductList() {
                   price: Number(item.itemData?.variations?.[0]?.itemVariationData?.priceMoney?.amount || 0),
                   imageUrl: item.itemData?.imageIds?.[0]
                     ? `/api/square/image/${item.itemData.imageIds[0]}`
-                    : '/images/placeholders/product-placeholder.jpg'
+                    : '/images/placeholders/product-placeholder.jpg',
+                  categoryId: item.itemData?.categories?.[0]?.id || item.itemData?.categoryId || null,
+                  imageIds: item.itemData?.imageIds || []
                 }))}
                 onAddToCart={handleAddToCart}
               />
@@ -198,7 +202,9 @@ export function ProductList() {
                   price: product.variations[0]?.price || 0,
                   imageUrl: product.imageIds?.[0]
                     ? `/api/square/image/${product.imageIds[0]}`
-                    : '/images/placeholders/product-placeholder.jpg'
+                    : '/images/placeholders/product-placeholder.jpg',
+                  categoryId: product.categoryId,
+                  imageIds: product.imageIds
                 }))}
                 onAddToCart={handleAddToCart}
               />
@@ -216,7 +222,9 @@ export function ProductList() {
                   price: product.variations[0]?.price || 0,
                   imageUrl: product.imageIds?.[0]
                     ? `/api/square/image/${product.imageIds[0]}`
-                    : '/images/placeholders/product-placeholder.jpg'
+                    : '/images/placeholders/product-placeholder.jpg',
+                  categoryId: product.categoryId,
+                  imageIds: product.imageIds
                 }))}
                 onAddToCart={handleAddToCart}
               />
@@ -299,6 +307,16 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
           className="object-cover rounded-md"
         />
       </div>
+      {(product.categoryId || product.imageIds) && (
+        <div className="text-xs text-gray-500 space-y-1 bg-gray-50 p-2 rounded">
+          {product.categoryId && (
+            <p>カテゴリID: {product.categoryId}</p>
+          )}
+          {product.imageIds && product.imageIds.length > 0 && (
+            <p>画像ID: {product.imageIds.join(', ')}</p>
+          )}
+        </div>
+      )}
       <p className="text-lg font-semibold">{formatPrice(product.price)}円</p>
       <p className="text-sm text-gray-500">{product.description}</p>
       <div className="flex items-center space-x-2">

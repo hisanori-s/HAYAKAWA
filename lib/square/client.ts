@@ -110,11 +110,24 @@ function processCatalogData(catalogData: { objects?: CatalogObject[] }) {
     ?.filter((obj: CatalogObject) => obj.type === 'ITEM')
     .forEach((item: CatalogObject) => {
       if (item.itemData) {
+        // カテゴリIDの取得（categories配列の最初の要素のIDを使用）
+        const categoryId = item.itemData.categories?.[0]?.id || item.itemData.categoryId || null;
+
+        // デバッグ情報の出力
+        console.log('Processing item:', {
+          id: item.id,
+          name: item.itemData.name,
+          categoryId,
+          imageIds: item.itemData.imageIds,
+          rawCategories: item.itemData.categories,
+          rawCategoryId: item.itemData.categoryId
+        });
+
         products.push({
           id: item.id,
           name: item.itemData.name || 'Unnamed Product',
           description: item.itemData.description || null,
-          categoryId: item.itemData.categoryId || null,
+          categoryId: categoryId,
           variations: (item.itemData.variations || []).map((v) => ({
             id: v.id,
             name: v.itemVariationData?.name || 'Default Variation',
