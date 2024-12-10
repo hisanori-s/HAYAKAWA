@@ -1,4 +1,4 @@
-import { Client, Environment } from 'square';
+import { Client, Environment, CatalogObject } from 'square';
 
 // 環境変数の存在チェック
 if (!process.env.SQUARE_ACCESS_TOKEN) {
@@ -67,28 +67,89 @@ export async function fetchCategories() {
   }
 }
 
+// カタログデータの型定義
+interface CategoryData {
+  id: string;
+  name: string;
+  parentId?: string | null;
+}
+
+interface ProductData {
+  id: string;
+  name: string;
+  description?: string | null;
+  categoryId?: string | null;
+  variations: Array<{
+    id: string;
+    name: string;
+    price: number;
+  }>;
+  imageIds?: string[];
+}
+
+// カタログデータの処理関数
+function processCatalogData(catalogData: { objects?: CatalogObject[] }) {
+  const categories: { [key: string]: CategoryData } = {};
+  const products: ProductData[] = [];
+
+  // カテゴリー情報の抽出
+  catalogData.objects
+    ?.filter((obj: CatalogObject) => obj.type === 'CATEGORY')
+    .forEach((category: CatalogObject) => {
+      if (category.categoryData) {
+        categories[category.id] = {
+          id: category.id,
+          name: category.categoryData.name || 'Unknown Category',
+          parentId: category.categoryData.parentCategory?.id || null
+        };
+      }
+    });
+
+  // 商品情報の抽出（カテゴリー情報を含む）
+  catalogData.objects
+    ?.filter((obj: CatalogObject) => obj.type === 'ITEM')
+    .forEach((item: CatalogObject) => {
+      if (item.itemData) {
+        products.push({
+          id: item.id,
+          name: item.itemData.name || 'Unnamed Product',
+          description: item.itemData.description || null,
+          categoryId: item.itemData.categoryId || null,
+          variations: (item.itemData.variations || []).map((v) => ({
+            id: v.id,
+            name: v.itemVariationData?.name || 'Default Variation',
+            price: Number(v.itemVariationData?.priceMoney?.amount || 0)
+          })),
+          imageIds: item.itemData.imageIds || []
+        });
+      }
+    });
+
+  return { categories, products };
+}
+
 // カタログ情報取得用の関数を修正
 export async function fetchCatalogWithCategories() {
   try {
-    // まずカテゴリを取得
-    const categories = await fetchCategories();
-    console.log('Fetched categories:', categories.map(cat => ({
-      id: cat.id,
-      name: cat.categoryData?.name
-    })));
+    console.log('Fetching complete catalog data...');
 
-    // 次に商品を取得
-    const { result: itemsResult } = await squareClient.catalogApi.searchCatalogItems({
-      limit: 100
+    // 全てのカタログオブジェクトを取得
+    const { result } = await squareClient.catalogApi.listCatalog();
+
+    if (!result || !result.objects) {
+      console.log('No catalog data found');
+      return { categories: {}, products: [] };
+    }
+
+    // カタログデータを処理
+    const processedData = processCatalogData(result);
+
+    console.log('Processed catalog data:', {
+      categoriesCount: Object.keys(processedData.categories).length,
+      productsCount: processedData.products.length
     });
 
-    // デバッグ用にログ出力
-    console.log('Items result:', JSON.stringify(itemsResult, null, 2));
-
-    return {
-      items: itemsResult.items || [],
-      categories: categories
-    };
+    return processedData;
   } catch (error) {
     console.error('Error fetching catalog:', error);
     throw error;
