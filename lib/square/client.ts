@@ -178,3 +178,43 @@ export async function fetchCatalogWithCategories() {
     throw error;
   }
 }
+
+// 画像情報取得用の関数
+export async function fetchImageUrl(imageId: string) {
+  try {
+    const { result } = await squareClient.catalogApi.retrieveCatalogObject(
+      imageId,
+      true // includeRelatedObjects
+    );
+
+    if (!result.object?.imageData?.url) {
+      throw new Error('Image URL not found');
+    }
+
+    return result.object.imageData.url;
+  } catch (error) {
+    console.error('Error fetching image:', error);
+    throw error;
+  }
+}
+
+// 複数画像の一括取得用の関数
+export async function fetchMultipleImageUrls(imageIds: string[]) {
+  try {
+    const { result } = await squareClient.catalogApi.batchRetrieveCatalogObjects({
+      objectIds: imageIds,
+      includeRelatedObjects: true,
+    });
+
+    if (!result.objects) {
+      return [];
+    }
+
+    return result.objects
+      .filter(obj => obj.type === 'IMAGE' && obj.imageData?.url)
+      .map(obj => obj.imageData!.url!);
+  } catch (error) {
+    console.error('Error fetching multiple images:', error);
+    return [];
+  }
+}
