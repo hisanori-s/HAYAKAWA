@@ -7,6 +7,7 @@ import Image from "next/image"
 import { DEMO_PRODUCTS } from '@/lib/constants/demo-products'
 import type { CartItem } from '@/lib/square/types'
 import { useCart } from '@/components/cart/cart-provider'
+import { LoadingAnimation } from '@/components/ui/loading-animation'
 
 // 金額を表示用の文字列に変換（日本円表示用）
 const formatPrice = (amount: number | bigint | null | undefined): string => {
@@ -56,6 +57,12 @@ interface DisplayProduct {
   imageIds?: string[];
 }
 
+// 型定義を追加
+interface ImageBatchResponse {
+  success: boolean;
+  urls: string[];
+}
+
 export function ProductList() {
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
   const [uncategorizedProducts, setUncategorizedProducts] = useState<ProductData[]>([]);
@@ -96,6 +103,36 @@ export function ProductList() {
 
         setCategoryGroups(groups);
         setUncategorizedProducts(uncategorized);
+
+        // 商品一覧取得後、すべての画像IDを収集して一括プリフェッチ
+        const allImageIds = data.products
+          .flatMap(product => product.imageIds || [])
+          .filter(Boolean);
+
+        if (allImageIds.length > 0) {
+          console.log('Starting batch image prefetch for', allImageIds.length, 'images');
+          try {
+            const response = await fetch('/api/square/image/batch', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ imageIds: allImageIds }),
+            });
+            const imageData = await response.json() as ImageBatchResponse;
+            if (imageData.success) {
+              // プリフェッチのためにURLを取得
+              imageData.urls.forEach((url: string) => {
+                const img = document.createElement('img');
+                img.src = url;
+              });
+              console.log('Successfully prefetched', imageData.urls.length, 'images');
+            }
+          } catch (error) {
+            console.error('Error prefetching images:', error);
+          }
+        }
+
       } catch (error) {
         console.error('Fetch error:', error);
         setError('商品の取得に失敗しました。');
@@ -309,15 +346,18 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
     const fetchImages = async () => {
       if (product.imageIds && product.imageIds.length > 0) {
         try {
-          const urls = await Promise.all(
-            product.imageIds.map(async (id) => {
-              const response = await fetch(`/api/square/image/${id}`);
-              const data = await response.json();
-              return data.success ? data.url : null;
-            })
-          );
-          const validUrls = urls.filter((url): url is string => url !== null);
-          setImageUrls(validUrls);
+          // 一括で画像URLを取得
+          const response = await fetch('/api/square/image/batch', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ imageIds: product.imageIds }),
+          });
+          const data = await response.json();
+          if (data.success) {
+            setImageUrls(data.urls);
+          }
         } catch (error) {
           console.error('Error fetching images:', error);
           setImageError(true);
@@ -342,20 +382,24 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
       <div className="relative aspect-square w-full">
         {imageUrls.length > 0 ? (
           <div className="relative w-full h-full">
-            <Carousel
-              className="w-full h-full"
-              setApi={setApi}
-            >
+            <Carousel className="w-full h-full" setApi={setApi}>
               <CarouselContent>
                 {imageUrls.map((url, index) => (
                   <CarouselItem key={index}>
                     <div className="relative aspect-square w-full">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <LoadingAnimation className="w-24 h-24" />
+                      </div>
                       <Image
                         src={url}
                         alt={`${product.name} - Image ${index + 1}`}
                         fill
                         className="object-cover rounded-md"
                         priority={index === 0}
+                        onLoadingComplete={(img) => {
+                          img.style.opacity = '1';
+                        }}
+                        style={{ opacity: 0, transition: 'opacity 0.3s' }}
                       />
                     </div>
                   </CarouselItem>

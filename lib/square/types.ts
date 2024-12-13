@@ -1,5 +1,12 @@
 import { CatalogObject } from 'square';
 
+// CategoryNode型を追加
+export type CategoryNode = {
+  id: string;
+  name: string;
+  items: CatalogObject[];
+};
+
 // カスタム型定義（必要な場合のみ）
 export type ExtendedCatalogObject = CatalogObject & {
   imageUrl?: string;
