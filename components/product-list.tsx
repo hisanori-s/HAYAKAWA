@@ -7,7 +7,6 @@ import Image from "next/image"
 import { DEMO_PRODUCTS } from '@/lib/constants/demo-products'
 import type { CartItem } from '@/lib/square/types'
 import { useCart } from '@/components/cart/cart-provider'
-import { LoadingAnimation } from '@/components/ui/loading-animation'
 
 // 金額を表示用の文字列に変換（日本円表示用）
 const formatPrice = (amount: number | bigint | null | undefined): string => {
@@ -135,7 +134,7 @@ export function ProductList() {
 
       } catch (error) {
         console.error('Fetch error:', error);
-        setError('商品の取得に失敗しました。');
+        setError('商品の取得に失敗しまし��。');
       } finally {
         setIsLoading(false);
       }
@@ -380,26 +379,19 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
   return (
     <div className="space-y-4">
       <div className="relative aspect-square w-full">
-        {imageUrls.length > 0 ? (
+        {product.imageIds && product.imageIds.length > 0 ? (
           <div className="relative w-full h-full">
             <Carousel className="w-full h-full" setApi={setApi}>
               <CarouselContent>
-                {imageUrls.map((url, index) => (
+                {imageUrls.map((url: string, index: number) => (
                   <CarouselItem key={index}>
                     <div className="relative aspect-square w-full">
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <LoadingAnimation className="w-24 h-24" />
-                      </div>
                       <Image
                         src={url}
                         alt={`${product.name} - Image ${index + 1}`}
                         fill
                         className="object-cover rounded-md"
                         priority={index === 0}
-                        onLoadingComplete={(img) => {
-                          img.style.opacity = '1';
-                        }}
-                        style={{ opacity: 0, transition: 'opacity 0.3s' }}
                       />
                     </div>
                   </CarouselItem>
@@ -410,7 +402,7 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
                   <CarouselPrevious className="left-2" />
                   <CarouselNext className="right-2" />
                   <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
-                    {imageUrls.map((_, index) => (
+                    {imageUrls.map((_: string, index: number) => (
                       <button
                         key={index}
                         onClick={() => api?.scrollTo(index)}
