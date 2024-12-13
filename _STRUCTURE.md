@@ -63,6 +63,8 @@
 │       ├── global
 │       └── placeholders
 │           └── product-placeholder.jpg
+├── types
+│   └── dotlottie.d.ts
 ├── .cursorrules
 ├── .editorconfig
 ├── .env.local
@@ -172,18 +174,20 @@ current_features:
     - "Square決済連携"
     - "商品画像表示"
     - "配送情報入力"
+    - "画像表示の最適化（プリフェッチ・キャッシュ）"
 
   in_progress:
     - "カテゴリ情報の取得改善"
-    - "画像表示の最適化"
+    - "画像表示のさらなる最適化"
     - "エラーハンドリングの強化"
     - "デバッグ機能の拡充"
+    - "無限スライド機能の実装"
 
 development_status:
   square_integration:
     catalog: "実装済み - 商品データの取得"
     checkout: "実装済み - 決済フロー"
-    images: "実装中 - 画像表示の改善"
+    images: "最適化完了 - プリフェッチ・キャッシュ実装"
     categories: "実装中 - カテゴリ管理の強化"
 
   ui_components:
