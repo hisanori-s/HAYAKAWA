@@ -3,9 +3,6 @@
 .
 ├── app
 │   ├── api
-│   │   ├── catalog
-│   │   │   ├── api-routes.js
-│   │   │   └── route.ts
 │   │   └── square
 │   │       ├── checkout
 │   │       │   └── route.ts
@@ -14,12 +11,11 @@
 │   │       ├── test
 │   │       │   └── route.ts
 │   │       ├── catalog
-│   │       │   └── route.ts
-│   │       ├── image
-│   │       │   └── [imageId]
-│   │       │       └── route.ts
-│   │       └── direct-test
-│   │           └── route.ts
+│   │       │   ├── route.ts
+│   │       │   └── api-routes.ts
+│   │       └── image
+│   │           └── [imageId]
+│   │               └── route.ts
 │   ├── cart
 │   │   └── page.tsx
 │   ├── order
@@ -101,11 +97,6 @@ directories:
     description: "Next.js App Routerのメインディレクトリ"
     api:
       description: "APIエンドポイント群"
-      catalog:
-        description: "商品カタログ関連のAPI"
-        files:
-          route.ts: "カタログデータ取得エンドポイント"
-          api-routes.js: "API定義とルーティング"
       square:
         description: "Square API関連のエンドポイント"
         endpoints:
