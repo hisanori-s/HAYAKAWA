@@ -27,7 +27,7 @@ export async function POST(request: Request) {
         })),
       },
       checkoutOptions: {
-        redirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/order/complete`,
+        redirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/cart/complete`,
       },
     });
 
