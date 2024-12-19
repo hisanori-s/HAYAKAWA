@@ -4,23 +4,24 @@
 ├── app
 │   ├── api
 │   │   └── square
+│   │       ├── catalog
+│   │       │   ├── api-routes.ts
+│   │       │   └── route.ts
 │   │       ├── checkout
 │   │       │   └── route.ts
 │   │       ├── env-check
 │   │       │   └── route.ts
-│   │       ├── test
-│   │       │   └── route.ts
-│   │       ├── catalog
-│   │       │   ├── route.ts
-│   │       │   └── api-routes.ts
-│   │       └── image
-│   │           └── [imageId]
-│   │               └── route.ts
+│   │       ├── image
+│   │       │   ├── batch
+│   │       │   │   └── route.ts
+│   │       │   └── [id]
+│   │       │       └── route.ts
+│   │       └── test
+│   │           └── route.ts
 │   ├── cart
+│   │   ├── complete
+│   │   │   └── page.tsx
 │   │   └── page.tsx
-│   ├── order
-│   │   └── complete
-│   │       └── page.tsx
 │   ├── fonts
 │   │   ├── GeistMonoVF.woff
 │   │   └── GeistVF.woff
@@ -31,10 +32,14 @@
 ├── components
 │   ├── ui
 │   │   ├── button.tsx
+│   │   ├── card.tsx
+│   │   ├── carousel.tsx
 │   │   ├── dialog.tsx
 │   │   ├── input.tsx
+│   │   ├── loading-animation.tsx
 │   │   ├── tabs.tsx
 │   │   ├── toast.tsx
+│   │   ├── toaster.tsx
 │   │   └── use-toast.ts
 │   ├── cart
 │   │   ├── cart-provider.tsx
@@ -55,6 +60,8 @@
 │   │   └── cart.ts
 │   └── utils.ts
 ├── public
+│   ├── animations
+│   │   └── loading-spinner.webm
 │   └── images
 │       ├── global
 │       └── placeholders
@@ -100,14 +107,14 @@ directories:
       square:
         description: "Square API関連のエンドポイント"
         endpoints:
-          checkout: "決済処理とチェックアウトセッション"
           catalog: "商品カタログデータの取得"
-          image: "商品画像の取得"
+          checkout: "決済処理とチェックアウトセッション"
+          image: "商品画像の取得（単体・バッチ）"
           env-check: "環境変数の検証"
           test: "APIテスト用エンドポイント"
     pages:
       cart: "ショッピングカートページ"
-      order/complete: "注文完了ページ"
+      cart/complete: "注文完了ページ"
       layout: "共通レイアウト"
       page: "トップページ/商品一覧"
 
@@ -117,8 +124,11 @@ directories:
       description: "shadcn/uiベースの基本UIコンポーネント"
       components:
         - "button: ボタンコンポーネント"
+        - "card: カードコンポーネント"
+        - "carousel: カルーセルコンポーネント"
         - "dialog: モーダルダイアログ"
         - "input: 入力フォーム"
+        - "loading-animation: ローディングアニメーション"
         - "tabs: タブナビゲーション"
         - "toast: 通知表示"
     cart:
@@ -151,6 +161,10 @@ directories:
 
   public:
     description: "静的ファイル"
+    animations:
+      description: "アニメーションファイル"
+      files:
+        loading-spinner.webm: "ローディングアニメーション"
     images:
       description: "画像ファイル"
       directories:
