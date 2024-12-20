@@ -5,13 +5,11 @@ import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
 import { LoadingAnimation } from '@/components/ui/loading-animation';
-import { useCartStore } from '@/lib/store/cart';
 
 export default function CheckoutCheckPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { clearCart } = useCartStore();
 
   useEffect(() => {
     const checkPaymentStatus = async () => {
@@ -40,9 +38,8 @@ export default function CheckoutCheckPage() {
           currentUrl: window.location.href
         });
 
-        // エラーチェック
         if (error || errorMessage) {
-          throw new Error(`決済エラー: ${errorMessage || error || '不明なエラー'}`);
+          throw new Error(`Square Error: ${errorMessage || error || '不明なエラー'}`);
         }
 
         // 注文IDまたはチェックアウトIDのいずれかが必要
@@ -50,10 +47,9 @@ export default function CheckoutCheckPage() {
           throw new Error('注文情報が見つかりません');
         }
 
-        // ステータスの確認
-        if (status === 'ok' || transactionId) {
-          // 決済成功時はカートをクリア
-          clearCart();
+        // ステータスの確認（Square Payment Formからの戻り値に基づく）
+        if (transactionId) {
+          // 決済成功
           router.push('/cart/complete');
         } else if (status === 'cancelled') {
           throw new Error('決済がキャンセルされました');
@@ -67,20 +63,17 @@ export default function CheckoutCheckPage() {
           stack: error instanceof Error ? error.stack : undefined,
           timestamp: new Date().toISOString()
         });
-
         toast({
           title: 'エラーが発生しました',
           description: error instanceof Error ? error.message : '決済の確認中にエラーが発生しました',
           variant: 'destructive',
         });
-
-        // エラー時はカートページに戻る
-        router.push('/cart');
+        router.push('/cart/error');
       }
     };
 
     checkPaymentStatus();
-  }, [router, searchParams, toast, clearCart]);
+  }, [router, searchParams, toast]);
 
   return (
     <div className="container mx-auto py-8 flex flex-col items-center justify-center min-h-[50vh]">
