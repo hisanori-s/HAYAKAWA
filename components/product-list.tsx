@@ -134,7 +134,7 @@ export function ProductList() {
 
       } catch (error) {
         console.error('Fetch error:', error);
-        setError('商品の取得に失敗しまし��。');
+        setError('商品の取得に失敗しました。');
       } finally {
         setIsLoading(false);
       }

@@ -28,7 +28,13 @@ export type ProductGroup = {
 export interface ExtendedCheckoutOptions {
   redirectUrl?: string;
   askForShippingAddress?: boolean;
+  requireBillingAddress?: boolean;
+  merchantSupportEmail?: string;
+  enableCoupon?: boolean;
+  enableLoyalty?: boolean;
   locale?: string;
+  country?: string;
+  currency?: string;
 }
 
 // 型定義のマージ
