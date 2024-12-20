@@ -23,3 +23,15 @@ export type ProductGroup = {
   name: string;
   items: CatalogObject[];
 };
+
+// Square APIの拡張型定義
+export interface ExtendedCheckoutOptions {
+  redirectUrl?: string;
+  askForShippingAddress?: boolean;
+  locale?: string;
+}
+
+// 型定義のマージ
+declare module 'square' {
+  interface CheckoutOptions extends ExtendedCheckoutOptions {}
+}

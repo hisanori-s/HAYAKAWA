@@ -14,22 +14,55 @@ export default function CheckoutCheckPage() {
   useEffect(() => {
     const checkPaymentStatus = async () => {
       try {
-        // Square Payment Formからのパラメータを取得
-        const checkoutId = searchParams.get('checkoutId');
-        const status = searchParams.get('status');
+        // すべてのクエリパラメータをログ出力
+        const params = Object.fromEntries(searchParams.entries());
+        console.log('All URL parameters:', params);
 
-        if (!checkoutId || !status) {
-          throw new Error('必要なパラメータが不足しています');
+        // Square Payment Formからのパラメータを取得
+        const orderId = searchParams.get('orderId');
+        const checkoutId = searchParams.get('checkoutId');
+        const referenceId = searchParams.get('referenceId');
+        const transactionId = searchParams.get('transactionId');
+        const status = searchParams.get('status');
+        const error = searchParams.get('error');
+        const errorMessage = searchParams.get('error_message');
+
+        console.log('Payment status check:', {
+          orderId,
+          checkoutId,
+          referenceId,
+          transactionId,
+          status,
+          error,
+          errorMessage,
+          currentUrl: window.location.href
+        });
+
+        if (error || errorMessage) {
+          throw new Error(`Square Error: ${errorMessage || error || '不明なエラー'}`);
         }
 
-        // statusはcheckout.complete（成功）またはcheckout.cancelled（キャンセル）
-        if (status === 'checkout.complete') {
+        // 注文IDまたはチェックアウトIDのいずれかが必要
+        if (!orderId && !checkoutId) {
+          throw new Error('注文情報が見つかりません');
+        }
+
+        // ステータスの確認（Square Payment Formからの戻り値に基づく）
+        if (transactionId) {
+          // 決済成功
           router.push('/cart/complete');
+        } else if (status === 'cancelled') {
+          throw new Error('決済がキャンセルされました');
         } else {
-          throw new Error('決済が完了しませんでした');
+          console.error('Unexpected state:', { status, transactionId });
+          throw new Error('決済の状態が不明です');
         }
       } catch (error) {
-        console.error('Payment verification error:', error);
+        console.error('Payment verification error:', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          timestamp: new Date().toISOString()
+        });
         toast({
           title: 'エラーが発生しました',
           description: error instanceof Error ? error.message : '決済の確認中にエラーが発生しました',

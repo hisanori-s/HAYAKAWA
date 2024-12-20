@@ -37,7 +37,7 @@ export default function CartPage() {
       console.error('Checkout error:', error);
       toast({
         title: 'エラー',
-        description: 'チェックアウトに失敗しま�。もう一度お試しください。',
+        description: 'チェックアウトに失敗しました。もう一度お試しください。',
         variant: 'destructive',
       });
     } finally {

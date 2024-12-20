@@ -1,6 +1,21 @@
 ## ツリー表示
 ```tree
 .
+├── .cursorrules
+├── .editorconfig
+├── .env.local
+├── .eslintrc.json
+├── .git
+├── .gitignore
+├── .next
+├── .vscode
+├── .workbench
+│   ├── SDKで画像IDからURL取得.md
+│   ├── Square Checkout日本語化要件と実装ガイド.md
+│   └── スクエアSDK.md
+├── _DEVELOPMENT_LOG.md
+├── _INSTRUCTION.md
+├── _STRUCTURE.md
 ├── app
 │   ├── api
 │   │   └── square
@@ -19,7 +34,11 @@
 │   │       └── test
 │   │           └── route.ts
 │   ├── cart
+│   │   ├── check
+│   │   │   └── page.tsx
 │   │   ├── complete
+│   │   │   └── page.tsx
+│   │   ├── error
 │   │   │   └── page.tsx
 │   │   └── page.tsx
 │   ├── fonts
@@ -49,16 +68,23 @@
 │   ├── ec-page.tsx
 │   ├── header.tsx
 │   └── product-list.tsx
+├── components.json
 ├── lib
 │   ├── constants
 │   │   └── demo-products.ts
 │   ├── square
 │   │   ├── client.ts
 │   │   └── types.ts
-│   ├── square-utils.ts
 │   ├── store
 │   │   └── cart.ts
+│   ├── square-utils.ts
 │   └── utils.ts
+├── next-env.d.ts
+├── next.config.mjs
+├── node_modules
+├── package-lock.json
+├── package.json
+├── postcss.config.mjs
 ├── public
 │   ├── animations
 │   │   └── loading-spinner.webm
@@ -66,26 +92,11 @@
 │       ├── global
 │       └── placeholders
 │           └── product-placeholder.jpg
-├── types
-│   └── dotlottie.d.ts
-├── .cursorrules
-├── .editorconfig
-├── .env.local
-├── .eslintrc.json
-├── .gitignore
-├── _DEVELOPMENT_LOG.md
-├── _INSTRUCTION.md
-├── _STRUCTURE.md
-├── components.json
-├── next-env.d.ts
-├── next.config.mjs
-├── package-lock.json
-├── package.json
-├── postcss.config.mjs
 ├── README.md
 ├── tailwind.config.ts
-└── tsconfig.json
-```
+├── tsconfig.json
+└── types
+    └── dotlottie.d.ts
 
 ## YAML形式での構造説明
 ```yaml
@@ -112,11 +123,17 @@ directories:
           image: "商品画像の取得（単体・バッチ）"
           env-check: "環境変数の検証"
           test: "APIテスト用エンドポイント"
-    pages:
-      cart: "ショッピングカートページ"
-      cart/complete: "注文完了ページ"
-      layout: "共通レイアウト"
-      page: "トップページ/商品一覧"
+    cart:
+      description: "カート関連のページ"
+      pages:
+        check: "注文確認ページ"
+        complete: "注文完了ページ"
+        error: "エラーページ"
+    fonts:
+      description: "フォントファイル"
+      files:
+        - "GeistMonoVF.woff: モノスペースフォント"
+        - "GeistVF.woff: 通常フォント"
 
   components:
     description: "再利用可能なコンポーネント"
@@ -133,15 +150,15 @@ directories:
         - "toast: 通知表示"
     cart:
       description: "カート関連のコンポーネント"
-      components:
+      files:
         cart-provider: "カート状態管理のコンテキストプロバイダー"
         cart-items: "カート内商品表示"
-    product:
-      description: "商品表示関連"
-      components:
-        product-list: "商品一覧表示"
-        delivery-info: "配送情報表示"
-        delivery-date: "配送日設定"
+    files:
+      delivery-date: "配送日に関する伝達事項の記載"
+      delivery-info: "配送料に関する伝達事項の記載"
+      ec-page: "ECサイトのメインページコンポーネント"
+      header: "ヘッダーコンポーネント"
+      product-list: "商品一覧コンポーネント"
 
   lib:
     description: "ユーティリティと共通ロジック"
@@ -158,13 +175,16 @@ directories:
       description: "定数定義"
       files:
         demo-products.ts: "開発用モックデータ"
+    files:
+      square-utils: "Square関連のユーティリティ関数"
+      utils: "一般的なユーティリティ関数"
 
   public:
     description: "静的ファイル"
     animations:
       description: "アニメーションファイル"
       files:
-        loading-spinner.webm: "ローディングアニメーション"
+        loading-spinner: "ローディングアニメーション"
     images:
       description: "画像ファイル"
       directories:
@@ -192,7 +212,7 @@ development_status:
   square_integration:
     catalog: "実装済み - 商品データの取得"
     checkout: "実装済み - 決済フロー"
-    images: "最適化完了 - プリフェッチ・キャッシュ実装"
+    images: "最適化完了 - プリフェッチ・キャッシ���実装"
     categories: "実装中 - カテゴリ管理の強化"
 
   ui_components:

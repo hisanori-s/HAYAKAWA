@@ -1,77 +1,91 @@
-# Square ECサイト開発 - チェックアウト機能の実装と改善
+# Square ECサイト開発 - チェックアウト機能の言語設定とリダイレクト改善
 
 ## 現在の状況
-1. チェックアウト機能の実装中
-   - Square SDKを利用した決済フロー
-   - カート機能は実装済み
-   - チェックアウトAPIでエラー発生中
+1. チェックアウト機能の実装状況
+   - Square Payment Formへの遷移は可能
+   - 言語設定（日本語化）が機能していない
+   - リダイレクト後にエラー扱いとなる
 
-2. 確認済みの実装
-   - カートページ（`app/cart/page.tsx`）
-   - Square クライアント（`lib/square/client.ts`）
-   - カートの状態管理（`lib/store/cart.ts`）
-   - チェックアウトAPI（`app/api/square/checkout/route.ts`）
+2. 最新の実装内容
+   - `checkoutOptions`での言語設定
+   - リダイレクトURLの設定
+   - エラーハンドリングの強化
 
-## 現在の問題点
-1. チェックアウトボタンクリック時にエラー発生
-   - Square決済画面への遷移が失敗
-   - エラーメッセージ：「チェックアウトに失敗しました」
+3. 確認済みの問題点
+   - Square Payment Formが英語表示のまま
+   - リダイレクト時のステータスチェックが適切に機能していない
+   - デバッグログは実装済み
 
-2. 環境変数の設定
-   ```env
-   SQUARE_APPLICATION_ID=sandbox-sq0idb-qRZUryti_vnscFYJzOSBKQ
-   SQUARE_ACCESS_TOKEN=EAAAl99iBOcmijMJHv_VGPhFfIvf2GGMjuGtAV8ubCA0FaO0sUj-RrGQ385axw8O
-   NEXT_PUBLIC_SQUARE_LOCATION_ID=LF0VKT2S27QTG
-   SQUARE_ENVIRONMENT=sandbox
-   NEXT_PUBLIC_SITE_URL=http://localhost:3000
-   ```
+## 直近のエラーログ
+```log
+Initializing Square client with: { environment: 'sandbox', hasAccessToken: true }
+Creating payment link with items: [
+  {
+    id: 'URSFRBESNSDWK6MUYUXDQ6BZ',
+    name: '画像付き餃子',
+    price: 1500,
+    quantity: 2
+  }
+]
+Environment config: {
+  locationId: 'LF0VKT2S27QTG',
+  redirectUrl: 'http://localhost:3000/cart/check',
+  environment: 'sandbox'
+}
+```
 
 ## 次のステップ
-1. Square開発者ダッシュボードでの確認
-   - Orders APIの有効化確認
-   - Payment Formの設定確認
-   - Webhookの設定確認
+1. Square Payment Formの言語設定
+   - Square APIドキュメントの再確認
+   - 言語設定パラメータの検証
+   - サンドボックス環境での制限確認
 
-2. デバッグ作業
-   - ブラウザの開発者ツールでのエラー確認
-   - `/api/square/checkout`のリクエスト/レスポンス確認
-   - Square APIのレスポンス確認
+2. リダイレクト処理の改善
+   - ステータスパラメータの検証
+   - エラー判定ロジックの見直し
+   - 成功/失敗の判定基準の明確化
 
-3. 実装の改善
-   - エラーハンドリングの強化
-   - デバッグログの追加
-   - テスト決済の実装
+3. デバッグ情報の活用
+   - 現在実装されているログの分析
+   - Square開発者ダッシュボードでの動作確認
+   - エラー発生時の詳細な情報収集
 
-## 参照すべきファイル
+## 重要なファイル
 1. `app/api/square/checkout/route.ts`
-   - チェックアウトAPIの実装
-   - エラーハンドリング
+```typescript
+// チェックアウトAPIの実装
+// 言語設定とリダイレクト処理の核となるファイル
+```
 
-2. `lib/square/client.ts`
-   - Square SDKの設定
-   - API初期化処理
+2. `app/cart/check/page.tsx`
+```typescript
+// リダイレクト後の処理を実装
+// ステータスチェックとエラーハンドリング
+```
 
-3. `app/cart/page.tsx`
-   - チェックアウトボタンの実装
-   - エラー表示処理
+3. `lib/square/types.ts`
+```typescript
+// Square APIの型定義
+// チェックアウトオプションの拡張
+```
 
 ## 技術的な注意点
 1. Square API
-   - サンドボックス環境での動作確認
-   - 適切なAPIバージョンの使用
-   - エラーレスポンスの詳細確認
+   - サンドボックス環境での制限確認
+   - 言語設定パラメータの正しい使用方法
+   - リダイレクトパラメータの仕様確認
 
-2. 決済フロー
-   - カード情報の非保持
-   - Square決済画面への適切なリダイレクト
-   - 完了後のコールバック処理
+2. エラーハンドリング
+   - 適切なステータスコードの使用
+   - エラーメッセージの明確化
+   - デバッグ情報の活用
 
 ## 次のチャットでの作業指示
-1. Square開発者ダッシュボードでの設定確認
-2. デバッグ情報の収集と分析
-3. エラーの原因特定と修正
+1. Square Payment Formの言語設定の再実装
+2. リダイレクト処理のロジック修正
+3. エラーハンドリングの改善
 
 ## 必要な追加情報
-1. ブラウザの開発者ツールでのエラーログ
-2. Square開発者ダッシュボードでの設定状況
-3. `/api/square/checkout`へのリクエスト/レスポンスの詳細
+1. Square開発者ダッシュボードでの設定状況
+2. サンドボックス環境での言語設定の制限有無
+3. 実際のリダイレクトURLとパラメータ

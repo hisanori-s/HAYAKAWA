@@ -117,7 +117,7 @@ function processCatalogData(catalogData: { objects?: CatalogObject[] }) {
         // カテゴリIDの取得（categories配列の最初の要素のIDを使用）
         const categoryId = item.itemData.categories?.[0]?.id || item.itemData.categoryId || null;
 
-        // デバッ��情報の出力
+        // デバッグ情報の出力
         console.log('Processing item:', {
           id: item.id,
           name: item.itemData.name,
