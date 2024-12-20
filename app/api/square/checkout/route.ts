@@ -21,14 +21,23 @@ export async function POST(request: Request) {
     console.log('Creating payment link with items:', items);
 
     // 環境変数の検証
-    if (!process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID) {
+    if (!process.env.SQUARE_LOCATION_ID) {
       throw new Error('Location ID is not configured');
     }
+
+    // サンドボックス環境かどうかを確認
+    const isSandbox = process.env.SQUARE_ENVIRONMENT === 'sandbox';
+    console.log('Environment:', {
+      isSandbox,
+      environment: process.env.SQUARE_ENVIRONMENT,
+      applicationId: process.env.SQUARE_APPLICATION_ID,
+      locationId: process.env.SQUARE_LOCATION_ID
+    });
 
     const requestBody: CreatePaymentLinkRequest = {
       idempotencyKey: randomUUID(),
       order: {
-        locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID,
+        locationId: process.env.SQUARE_LOCATION_ID,
         lineItems: items.map((item) => {
           // 金額のデバッグログ
           const amount = BigInt(item.price);
@@ -54,14 +63,23 @@ export async function POST(request: Request) {
         }]
       },
       checkoutOptions: {
-        redirectUrl: process.env.NEXT_PUBLIC_SQUARE_REDIRECT_URL,
+        redirectUrl: process.env.SQUARE_REDIRECT_URL,
         askForShippingAddress: true,
         requireBillingAddress: true,
         enableLoyalty: false,
         enableCoupon: false,
         locale: "ja-JP",
         country: "JP",
-        currency: "JPY"
+        currency: "JPY",
+        ...(isSandbox && {
+          // サンドボックス環境での追加設定
+          acceptedPaymentMethods: {
+            applePay: false,  // サンドボックスではデジタルウォレットは無効化
+            googlePay: false,
+            cashAppPay: false,
+            afterpayClearpay: false
+          }
+        })
       },
       prePopulatedData: {
         buyerAddress: {
@@ -72,8 +90,8 @@ export async function POST(request: Request) {
 
     // リクエストの詳細なデバッグ情報
     console.log('Square API request details:', {
-      locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID,
-      redirectUrl: process.env.NEXT_PUBLIC_SQUARE_REDIRECT_URL,
+      locationId: process.env.SQUARE_LOCATION_ID,
+      redirectUrl: process.env.SQUARE_REDIRECT_URL,
       itemsCount: items.length,
       totalAmount: items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     });
@@ -93,11 +111,17 @@ export async function POST(request: Request) {
       console.log('Payment link created successfully:', {
         id: response.result.paymentLink.id,
         url: response.result.paymentLink.url,
-        orderId: response.result.paymentLink.orderId
+        orderId: response.result.paymentLink.orderId,
+        longUrl: response.result.paymentLink.longUrl
       });
 
+      // サンドボックス環境では長いURLを使用
+      const checkoutUrl = isSandbox ?
+        response.result.paymentLink.longUrl :
+        response.result.paymentLink.url;
+
       return NextResponse.json({
-        url: response.result.paymentLink.url,
+        url: checkoutUrl,
         id: response.result.paymentLink.id,
         orderId: response.result.paymentLink.orderId
       });
@@ -110,7 +134,7 @@ export async function POST(request: Request) {
           errors: apiError.errors,
           message: apiError.message,
           request: {
-            locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID,
+            locationId: process.env.SQUARE_LOCATION_ID,
             itemsCount: items.length,
             firstItemPrice: items[0]?.price
           }
@@ -154,7 +178,7 @@ export async function POST(request: Request) {
       } : error,
       timestamp: new Date().toISOString(),
       environment: process.env.SQUARE_ENVIRONMENT,
-      locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID
+      locationId: process.env.SQUARE_LOCATION_ID
     });
 
     return NextResponse.json(

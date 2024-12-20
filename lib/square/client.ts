@@ -5,8 +5,8 @@ if (!process.env.SQUARE_ACCESS_TOKEN) {
   throw new Error('SQUARE_ACCESS_TOKEN is not defined');
 }
 
-if (!process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID) {
-  throw new Error('NEXT_PUBLIC_SQUARE_LOCATION_ID is not defined');
+if (!process.env.SQUARE_LOCATION_ID) {
+  throw new Error('SQUARE_LOCATION_ID is not defined');
 }
 
 if (!process.env.SQUARE_ENVIRONMENT) {
@@ -29,31 +29,7 @@ export const squareClient = new Client({
 });
 
 // 環境変数の値をエクスポート（必要な場合に使用）
-export const SQUARE_LOCATION_ID = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID;
-
-// 支払い作成用の関数
-export async function createPayment(paymentData: {
-  sourceId: string;
-  amount: number;
-  currency: string;
-}) {
-  try {
-    const { result } = await squareClient.paymentsApi.createPayment({
-      sourceId: paymentData.sourceId,
-      amountMoney: {
-        amount: BigInt(paymentData.amount * 100),
-        currency: paymentData.currency
-      },
-      locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID,
-      idempotencyKey: crypto.randomUUID()
-    });
-
-    return result.payment;
-  } catch (error) {
-    console.error('Error creating payment:', error);
-    throw error;
-  }
-}
+export const SQUARE_LOCATION_ID = process.env.SQUARE_LOCATION_ID;
 
 // カテゴリ情報のみを取得する関数
 export async function fetchCategories() {
@@ -117,16 +93,6 @@ function processCatalogData(catalogData: { objects?: CatalogObject[] }) {
         // カテゴリIDの取得（categories配列の最初の要素のIDを使用）
         const categoryId = item.itemData.categories?.[0]?.id || item.itemData.categoryId || null;
 
-        // デバッグ情報の出力
-        console.log('Processing item:', {
-          id: item.id,
-          name: item.itemData.name,
-          categoryId,
-          imageIds: item.itemData.imageIds,
-          rawCategories: item.itemData.categories,
-          rawCategoryId: item.itemData.categoryId
-        });
-
         products.push({
           id: item.id,
           name: item.itemData.name || 'Unnamed Product',
@@ -145,7 +111,7 @@ function processCatalogData(catalogData: { objects?: CatalogObject[] }) {
   return { categories, products };
 }
 
-// カタログ情報取得用の関数を修正
+// カタログ情報取得用の関数
 export async function fetchCatalogWithCategories() {
   try {
     console.log('Fetching complete catalog data...');
@@ -157,15 +123,6 @@ export async function fetchCatalogWithCategories() {
       console.log('No catalog data found');
       return { categories: {}, products: [] };
     }
-
-    // 画像データの確認用デバッグログ
-    const imageObjects = result.objects.filter(obj => obj.type === 'IMAGE');
-    console.log('Found image objects:', imageObjects.map(img => ({
-      id: img.id,
-      type: img.type,
-      hasImageData: !!img.imageData,
-      url: img.imageData?.url
-    })));
 
     // カタログデータを処理
     const processedData = processCatalogData(result);

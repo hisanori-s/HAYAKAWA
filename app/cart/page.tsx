@@ -5,14 +5,28 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { CartItems } from '@/components/cart/cart-items';
+import { useSearchParams } from 'next/navigation';
 
 export default function CartPage() {
   const { items } = useCartStore();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+
+  // エラーメッセージの確認と表示
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error) {
+      toast({
+        title: 'エラー',
+        description: decodeURIComponent(error),
+        variant: 'destructive',
+      });
+    }
+  }, [searchParams, toast]);
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -85,6 +99,9 @@ export default function CartPage() {
                 <div className="flex justify-between font-medium">
                   <span>合計</span>
                   <span>{total}円</span>
+                </div>
+                <div className="text-sm text-gray-500 mt-1">
+                  (税込)
                 </div>
               </div>
             </div>
