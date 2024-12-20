@@ -20,14 +20,20 @@ export async function POST(request: Request) {
     const { result } = await squareClient.checkoutApi.createPaymentLink({
       idempotencyKey: randomUUID(),
       order: {
-        locationId: process.env.SQUARE_LOCATION_ID!,
+        locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID!,
         lineItems: items.map((item) => ({
           quantity: item.quantity.toString(),
           catalogObjectId: item.id,
         })),
       },
       checkoutOptions: {
-        redirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/cart/complete`,
+        redirectUrl: process.env.NEXT_PUBLIC_SQUARE_REDIRECT_URL,
+        askForShippingAddress: true,
+        enableCoupon: false,
+        acceptedPaymentMethods: {
+          applePay: true,
+          googlePay: true,
+        },
       },
     });
 
