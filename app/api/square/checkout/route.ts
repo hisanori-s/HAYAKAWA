@@ -36,12 +36,22 @@ export async function POST(request: Request) {
             amount: BigInt(item.price),
             currency: "JPY"
           }
-        })),
+        }))
       },
       checkoutOptions: {
         redirectUrl: process.env.NEXT_PUBLIC_SQUARE_REDIRECT_URL,
         askForShippingAddress: true,
-        locale: "ja-JP"
+        requireBillingAddress: true,
+        merchantSupportEmail: process.env.MERCHANT_SUPPORT_EMAIL,
+        enableLoyalty: false,
+        locale: "ja-JP",
+        country: "JP",
+        currency: "JPY"
+      },
+      prePopulatedData: {
+        buyerAddress: {
+          country: "JP"
+        }
       }
     };
 
