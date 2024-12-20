@@ -9,18 +9,22 @@ if (!process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID) {
   throw new Error('NEXT_PUBLIC_SQUARE_LOCATION_ID is not defined');
 }
 
+if (!process.env.SQUARE_ENVIRONMENT) {
+  throw new Error('SQUARE_ENVIRONMENT is not defined');
+}
+
 // クライアントの設定をログ出力
 console.log('Initializing Square client with:', {
-  environment: process.env.NODE_ENV,
+  environment: process.env.SQUARE_ENVIRONMENT,
   hasAccessToken: !!process.env.SQUARE_ACCESS_TOKEN
 });
 
 // Square クライアントのインスタンスを作成
 export const squareClient = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
-  environment: process.env.NODE_ENV === 'production'
-    ? Environment.Production
-    : Environment.Sandbox,
+  environment: process.env.SQUARE_ENVIRONMENT === 'sandbox'
+    ? Environment.Sandbox
+    : Environment.Production,
   userAgentDetail: 'hayakawa-ec'
 });
 
@@ -113,7 +117,7 @@ function processCatalogData(catalogData: { objects?: CatalogObject[] }) {
         // カテゴリIDの取得（categories配列の最初の要素のIDを使用）
         const categoryId = item.itemData.categories?.[0]?.id || item.itemData.categoryId || null;
 
-        // デバッグ情報の出力
+        // デバッ��情報の出力
         console.log('Processing item:', {
           id: item.id,
           name: item.itemData.name,

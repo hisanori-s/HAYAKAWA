@@ -14,21 +14,19 @@ export default function CheckoutCheckPage() {
   useEffect(() => {
     const checkPaymentStatus = async () => {
       try {
-        // Square APIからのステータスパラメータを取得
+        // Square Payment Formからのパラメータを取得
+        const checkoutId = searchParams.get('checkoutId');
         const status = searchParams.get('status');
-        const orderId = searchParams.get('orderId');
 
-        if (!status || !orderId) {
+        if (!checkoutId || !status) {
           throw new Error('必要なパラメータが不足しています');
         }
 
-        if (status === 'SUCCESS') {
-          // 決済成功時の処理
-          // TODO: 必要に応じてバックエンドAPIで決済の最終確認を行う
+        // statusはcheckout.complete（成功）またはcheckout.cancelled（キャンセル）
+        if (status === 'checkout.complete') {
           router.push('/cart/complete');
         } else {
-          // 決済失敗時の処理
-          throw new Error('決済処理に失敗しました');
+          throw new Error('決済が完了しませんでした');
         }
       } catch (error) {
         console.error('Payment verification error:', error);
