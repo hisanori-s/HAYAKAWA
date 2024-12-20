@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { squareClient } from '@/lib/square/client';
 import { randomUUID } from 'crypto';
-import { CreatePaymentLinkRequest } from 'square';
+import { ApiError, CreatePaymentLinkRequest } from 'square';
 
 interface CartItem {
   id: string;
@@ -19,31 +19,46 @@ export async function POST(request: Request) {
     const { items }: CheckoutRequest = await request.json();
 
     console.log('Creating payment link with items:', items);
-    console.log('Environment config:', {
-      locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID,
-      redirectUrl: process.env.NEXT_PUBLIC_SQUARE_REDIRECT_URL,
-      environment: process.env.SQUARE_ENVIRONMENT,
-    });
+
+    // 環境変数の検証
+    if (!process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID) {
+      throw new Error('Location ID is not configured');
+    }
 
     const requestBody: CreatePaymentLinkRequest = {
       idempotencyKey: randomUUID(),
       order: {
-        locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID!,
-        lineItems: items.map((item) => ({
-          name: item.name,
-          quantity: item.quantity.toString(),
-          basePriceMoney: {
-            amount: BigInt(item.price),
-            currency: "JPY"
-          }
-        }))
+        locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID,
+        lineItems: items.map((item) => {
+          // 金額のデバッグログ
+          const amount = BigInt(item.price);
+          console.log('Processing item price:', {
+            itemName: item.name,
+            originalPrice: item.price,
+            convertedAmount: amount.toString()
+          });
+
+          return {
+            name: item.name,
+            quantity: item.quantity.toString(),
+            basePriceMoney: {
+              amount: amount,
+              currency: "JPY"
+            }
+          };
+        }),
+        taxes: [{
+          name: "消費税",
+          percentage: "10",
+          scope: "ORDER"
+        }]
       },
       checkoutOptions: {
         redirectUrl: process.env.NEXT_PUBLIC_SQUARE_REDIRECT_URL,
         askForShippingAddress: true,
         requireBillingAddress: true,
-        merchantSupportEmail: process.env.MERCHANT_SUPPORT_EMAIL,
         enableLoyalty: false,
+        enableCoupon: false,
         locale: "ja-JP",
         country: "JP",
         currency: "JPY"
@@ -55,23 +70,80 @@ export async function POST(request: Request) {
       }
     };
 
-    console.log('Square API request:', JSON.stringify(requestBody, (_, v) =>
+    // リクエストの詳細なデバッグ情報
+    console.log('Square API request details:', {
+      locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID,
+      redirectUrl: process.env.NEXT_PUBLIC_SQUARE_REDIRECT_URL,
+      itemsCount: items.length,
+      totalAmount: items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    });
+
+    console.log('Full request body:', JSON.stringify(requestBody, (_, v) =>
       typeof v === 'bigint' ? v.toString() : v
     ));
 
-    const response = await squareClient.checkoutApi.createPaymentLink(requestBody);
+    try {
+      const response = await squareClient.checkoutApi.createPaymentLink(requestBody);
 
-    if (!response.result?.paymentLink?.url) {
-      console.error('Invalid Square API response:', response);
-      throw new Error('決済リンクの生成に失敗しました');
+      if (!response.result?.paymentLink?.url) {
+        console.error('Invalid Square API response:', response);
+        throw new Error('決済リンクの生成に失敗しました');
+      }
+
+      console.log('Payment link created successfully:', {
+        id: response.result.paymentLink.id,
+        url: response.result.paymentLink.url,
+        orderId: response.result.paymentLink.orderId
+      });
+
+      return NextResponse.json({
+        url: response.result.paymentLink.url,
+        id: response.result.paymentLink.id,
+        orderId: response.result.paymentLink.orderId
+      });
+
+    } catch (apiError) {
+      if (apiError instanceof ApiError) {
+        // APIエラーの詳細なログ
+        console.error('Square API Error Details:', {
+          statusCode: apiError.statusCode,
+          errors: apiError.errors,
+          message: apiError.message,
+          request: {
+            locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID,
+            itemsCount: items.length,
+            firstItemPrice: items[0]?.price
+          }
+        });
+
+        // APIエラーの種類に応じたメッセージを返す
+        let errorMessage = 'チェックアウトに失敗しました';
+        if (apiError.statusCode === 400) {
+          errorMessage = 'リクエストの内容が不正です';
+          // 400エラーの詳細を追加
+          console.error('Bad Request Details:', {
+            validationErrors: apiError.errors,
+            requestBody: JSON.stringify(requestBody, (_, v) =>
+              typeof v === 'bigint' ? v.toString() : v
+            )
+          });
+        } else if (apiError.statusCode === 401) {
+          errorMessage = '認証に失敗しました';
+        } else if (apiError.statusCode === 403) {
+          errorMessage = 'アクセスが拒否されました';
+        }
+
+        return NextResponse.json(
+          {
+            error: errorMessage,
+            details: apiError.errors,
+            timestamp: new Date().toISOString()
+          },
+          { status: apiError.statusCode }
+        );
+      }
+      throw apiError;
     }
-
-    console.log('Square API response:', {
-      paymentLink: response.result.paymentLink,
-      url: response.result.paymentLink.url
-    });
-
-    return NextResponse.json({ url: response.result.paymentLink.url });
 
   } catch (error) {
     console.error('Checkout error details:', {
