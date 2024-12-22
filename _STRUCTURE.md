@@ -63,12 +63,15 @@
 │   ├── cart
 │   │   ├── cart-provider.tsx
 │   │   └── cart-items.tsx
+│   ├── payment
+│   │   └── square-payment.tsx
 │   ├── delivery-date.tsx
 │   ├── delivery-info.tsx
 │   ├── ec-page.tsx
 │   ├── header.tsx
 │   └── product-list.tsx
 ├── components.json
+├── env
 ├── lib
 │   ├── constants
 │   │   └── demo-products.ts
@@ -153,12 +156,19 @@ directories:
       files:
         cart-provider: "カート状態管理のコンテキストプロバイダー"
         cart-items: "カート内商品表示"
+    payment:
+      description: "決済関連のコンポーネント"
+      files:
+        square-payment: "Square決済コンポーネント"
     files:
       delivery-date: "配送日に関する伝達事項の記載"
       delivery-info: "配送料に関する伝達事項の記載"
       ec-page: "ECサイトのメインページコンポーネント"
       header: "ヘッダーコンポーネント"
       product-list: "商品一覧コンポーネント"
+
+  env:
+    description: "環境変数関連のディレクトリ"
 
   lib:
     description: "ユーティリティと共通ロジック"
