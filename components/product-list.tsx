@@ -26,6 +26,11 @@ interface CategoryGroup {
   products: ECProduct[];
 }
 
+// 在庫数を含むバリエーション型
+interface DisplayProductVariation extends ECProductVariation {
+  inventoryCount?: number;
+}
+
 // 商品表示用の共通インターフェース
 interface DisplayProduct {
   id: string;
@@ -35,7 +40,7 @@ interface DisplayProduct {
   imageUrl?: string;
   category: ECCategory;
   imageIds?: string[];
-  variations: ECProductVariation[];
+  variations: DisplayProductVariation[];
   trackInventory: boolean;
   isSoldOut: boolean;
 }
@@ -306,7 +311,8 @@ export function ProductList() {
                       price: Number(variation.itemVariationData?.priceMoney?.amount || 0),
                       ordinal: variation.itemVariationData?.ordinal || 0,
                       trackInventory: variation.itemVariationData?.trackInventory || false,
-                      soldOut: variation.itemVariationData?.locationOverrides?.some(override => override.soldOut) || false
+                      soldOut: variation.itemVariationData?.locationOverrides?.some(override => override.soldOut) || false,
+                      inventoryCount: variation.id ? inventoryData[variation.id] : 0
                     })),
                     trackInventory: firstVariation?.trackInventory || false,
                     isSoldOut: firstVariation?.locationOverrides?.some(override => override.soldOut) || false
@@ -386,16 +392,44 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
-  const [selectedVariation, setSelectedVariation] = useState<ECProductVariation | null>(
+  const [selectedVariation, setSelectedVariation] = useState<DisplayProductVariation | null>(
     product.variations && product.variations.length === 1 ? product.variations[0] : null
   );
 
   // バリエーションが選択されているかと数量が有効かをチェック
   const hasVariations = product.variations && product.variations.length > 1;
   const isValidSelection = !hasVariations || selectedVariation !== null;
-  const isValidQuantity = quantity > 0 && quantity <= 10;
+  const isValidQuantity = quantity > 0 && quantity <= getMaxQuantity();
   const isSoldOut = product.trackInventory && product.isSoldOut;
   const canAddToCart = isValidSelection && isValidQuantity && !isSoldOut;
+
+  // 選択可能な最大数量を取得
+  function getMaxQuantity(): number {
+    if (!selectedVariation) return 10;
+
+    // 在庫数を取得
+    const inventoryCount = selectedVariation.inventoryCount || 0;
+
+    // 在庫管理している場合
+    if (selectedVariation.trackInventory) {
+      // 在庫が0以下の場合は0を返す
+      if (inventoryCount <= 0) return 0;
+      // 在庫が1以上10未満の場合は在庫数を返す
+      if (inventoryCount < 10) return inventoryCount;
+    }
+
+    // それ以外の場合は10を返す
+    return 10;
+  }
+
+  useEffect(() => {
+    // 選択されたバリエーションが変更された時に、
+    // 現在の数量が新しい最大値を超えていたら調整する
+    const maxQty = getMaxQuantity();
+    if (quantity > maxQty) {
+      setQuantity(maxQty);
+    }
+  }, [selectedVariation]);
 
   useEffect(() => {
     if (!api) {
@@ -508,20 +542,28 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
             className="w-full rounded-md border border-input bg-background px-3 py-2"
             value={selectedVariation?.id || ''}
             onChange={(e) => {
-              const selected = product.variations.find(v => v.id === e.target.value);
-              setSelectedVariation(selected || null);
+              const selected = product.variations.find(v => v.id === e.target.value) || null;
+              setSelectedVariation(selected);
             }}
           >
             <option value="">選択してください</option>
             {product.variations.map((variation) => {
               const priceDiff = variation.price - product.price;
+              const maxQty = variation.trackInventory ? (variation.inventoryCount || 0) : 10;
+              const stockText = variation.trackInventory
+                ? maxQty > 0
+                  ? `（在庫：${maxQty}）`
+                  : '（在庫切れ）'
+                : '';
               return (
                 <option
                   key={variation.id}
                   value={variation.id}
+                  disabled={variation.trackInventory && maxQty <= 0}
                 >
                   {variation.name}
                   {priceDiff !== 0 ? ` (+${formatPrice(priceDiff)}円)` : ''}
+                  {stockText}
                 </option>
               );
             })}
@@ -538,11 +580,17 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
             id="quantity"
             type="number"
             value={quantity}
-            onChange={(e) => setQuantity(Number(e.target.value))}
+            onChange={(e) => {
+              const newValue = Number(e.target.value);
+              const maxQty = getMaxQuantity();
+              if (newValue >= 1 && newValue <= maxQty) {
+                setQuantity(newValue);
+              }
+            }}
             min={1}
-            max={10}
+            max={getMaxQuantity()}
             className="w-20"
-            disabled={isSoldOut}
+            disabled={isSoldOut || getMaxQuantity() <= 0}
           />
         </div>
 
