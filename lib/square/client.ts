@@ -101,7 +101,7 @@ function processCatalogData(catalogData: { objects?: CatalogObject[] }) {
           variations: (item.itemData.variations || []).map((v) => ({
             id: v.id,
             name: v.itemVariationData?.name || 'Default Variation',
-            price: Number(v.itemVariationData?.priceMoney?.amount || 0)
+            price: v.itemVariationData?.priceMoney?.amount ? Number(v.itemVariationData.priceMoney.amount) : 0
           })),
           imageIds: item.itemData.imageIds || []
         });

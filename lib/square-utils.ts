@@ -101,7 +101,7 @@ export async function createPayment(paymentData: {
     const { result } = await squareClient.paymentsApi.createPayment({
       sourceId: paymentData.sourceId,
       amountMoney: {
-        amount: BigInt(paymentData.amount * 100),
+        amount: BigInt(paymentData.amount),
         currency: paymentData.currency
       },
       locationId: process.env.SQUARE_LOCATION_ID,

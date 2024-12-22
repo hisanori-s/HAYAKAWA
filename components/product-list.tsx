@@ -12,7 +12,7 @@ import { useCart } from '@/components/cart/cart-provider'
 const formatPrice = (amount: number | bigint | null | undefined): string => {
   if (amount == null) return '0';
   const numericAmount = typeof amount === 'bigint' ? Number(amount) : amount;
-  return Math.floor(numericAmount / 100).toLocaleString();
+  return numericAmount.toLocaleString();
 };
 
 // デバッグデータの型定義を更新
@@ -371,7 +371,7 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
     onAddToCart({
       id: product.id,
       name: product.name,
-      price: product.price / 100,
+      price: product.price,
       quantity,
     });
   };
