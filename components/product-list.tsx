@@ -46,6 +46,19 @@ interface ImageBatchResponse {
   urls: string[];
 }
 
+// 在庫数のレスポンス型を定義
+interface InventoryResponse {
+  counts: Array<{
+    catalogObjectId: string;
+    quantity: number;
+  }>;
+}
+
+// 在庫マップの型を定義
+interface InventoryMap {
+  [key: string]: number;
+}
+
 /**
  * メイン商品リストコンポーネント
  * Square APIから商品情報を取得し、カテゴリごとに商品を表示する
@@ -55,6 +68,7 @@ export function ProductList() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [debugData, setDebugData] = useState<SquareApiDebugData | null>(null);
+  const [inventoryData, setInventoryData] = useState<InventoryMap>({});
   const { handleAddToCart } = useCart();
 
   useEffect(() => {
@@ -86,7 +100,41 @@ export function ProductList() {
 
         setCategoryGroups(groups);
 
-        // 商品��覧取得後、すべての画像IDを収集して一括プリフェッチ
+        // 在庫管理している商品のバリエーションIDを収集
+        const trackingVariationIds = groups.flatMap(g =>
+          g.products.flatMap(product =>
+            (product.itemData?.variations || [])
+              .filter(v => v.itemVariationData?.trackInventory)
+              .map(v => v.id)
+          )
+        ).filter((id): id is string => id !== undefined);
+
+        // 在庫数を取得
+        if (trackingVariationIds.length > 0) {
+          try {
+            const inventoryResponse = await fetch('/api/square/inventory', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                catalogItemVariationIds: trackingVariationIds,
+              }),
+            });
+            const inventoryData = await inventoryResponse.json() as InventoryResponse;
+            const inventoryMap = inventoryData.counts.reduce<InventoryMap>((acc, count) => {
+              if (count.catalogObjectId) {
+                acc[count.catalogObjectId] = count.quantity;
+              }
+              return acc;
+            }, {});
+            setInventoryData(inventoryMap);
+          } catch (error) {
+            console.error('Error fetching inventory:', error);
+          }
+        }
+
+        // 商品一覧取得後、すべての画像IDを収集して一括プリフェッチ
         const allImageIds = data.ecProducts
           .flatMap(product => product.itemData?.imageIds || [])
           .filter(Boolean);
@@ -190,6 +238,32 @@ export function ProductList() {
                       })), null, 2)}
                     </pre>
                   </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">在庫管理商品情報:</h4>
+                    <pre className="text-xs overflow-auto bg-white p-2 rounded">
+                      {JSON.stringify(categoryGroups.flatMap(group =>
+                        group.products
+                          .filter(product =>
+                            product.itemData?.variations?.some(variation =>
+                              variation.itemVariationData?.trackInventory === true
+                            )
+                          )
+                          .map(product => ({
+                            id: product.id,
+                            name: product.itemData?.name,
+                            variations: (product.itemData?.variations || [])
+                              .filter(v => v.itemVariationData?.trackInventory)
+                              .map(v => ({
+                                id: v.id,
+                                name: v.itemVariationData?.name,
+                                trackInventory: v.itemVariationData?.trackInventory,
+                                soldOut: v.itemVariationData?.locationOverrides?.some(override => override.soldOut),
+                                inventoryCount: v.id ? inventoryData[v.id] || 0 : 0
+                              }))
+                          }))
+                      ), null, 2)}
+                    </pre>
+                  </div>
                 </div>
                 <div className="mt-4">
                   <h4 className="font-semibold mb-2">APIレスポンス (生データ):</h4>
@@ -274,7 +348,7 @@ function ProductGroupView({ items, onAddToCart }: ProductGroupViewProps) {
               <div className="border-b border-dotted border-muted-foreground flex-grow mx-4" />
               <div className="flex items-center gap-2">
                 {item.trackInventory && item.isSoldOut && (
-                  <span className="text-red-500 text-sm whitespace-nowrap">売切御免</span>
+                  <span className="text-red-500 text-sm whitespace-nowrap">売り切れました</span>
                 )}
                 <p className={`font-medium ${item.trackInventory && item.isSoldOut ? 'text-gray-400' : ''}`}>
                   {formatPrice(item.price)}円
@@ -303,7 +377,7 @@ interface ProductModalProps {
 
 /**
  * 商品詳細モーダルコンポーネント
- * 商品の詳細情報、画像、バリエーション選択、数量選択を表示する
+ * 商品の詳情報、画像、バリエーション選択、数量選択を表示する
  * @param product 表示する商品情報
  * @param onAddToCart カートに商品を追加する関数
  */
