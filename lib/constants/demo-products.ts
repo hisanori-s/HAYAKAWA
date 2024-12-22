@@ -1,3 +1,8 @@
+/**
+ * @note このファイルは削除対象です
+ * Square APIからの商品表示に完全移行するため、このモックデータファイルは不要になります。
+ */
+
 import { CatalogObject } from 'square';
 import { ProductGroup } from '../square/types';
 

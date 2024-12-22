@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, CarouselApi } from "@/components/ui/carousel"
 import Image from "next/image"
-import { DEMO_PRODUCTS } from '@/lib/constants/demo-products'
 import type { CartItem, ECCategory, ECProduct, CategoryTree } from '@/lib/square/types'
 import { useCart } from '@/components/cart/cart-provider'
 
@@ -188,39 +187,9 @@ export function ProductList() {
         </div>
       )}
 
-      {/* モックデータの表示 */}
-      <div className="col-span-2 mb-8">
-        <h2 className="text-xl font-bold mb-6">デモ商品</h2>
-        <div className="grid md:grid-cols-2 gap-x-12 gap-y-8">
-          {DEMO_PRODUCTS.map((group) => (
-            <section key={group.name}>
-              <h2 className="text-lg tracking-wide text-muted-foreground mb-4">{group.name}</h2>
-              <ProductGroupView
-                items={group.items.map(item => ({
-                  id: item.id,
-                  name: item.itemData?.name || '',
-                  description: item.itemData?.description,
-                  price: Number(item.itemData?.variations?.[0]?.itemVariationData?.priceMoney?.amount || 0),
-                  imageUrl: item.itemData?.imageIds?.[0]
-                    ? `/api/square/image/${item.itemData.imageIds[0]}`
-                    : '/images/placeholders/product-placeholder.jpg',
-                  category: {
-                    id: item.itemData?.categories?.[0]?.id || '',
-                    name: 'デモカテゴリ',
-                    isECCategory: true
-                  },
-                  imageIds: item.itemData?.imageIds || []
-                }))}
-                onAddToCart={handleAddToCart}
-              />
-            </section>
-          ))}
-        </div>
-      </div>
-
-      {/* Square商品のカテゴリ別表示 */}
+      {/* 商品一覧 */}
       <div className="col-span-2">
-        <h2 className="text-xl font-bold mb-6">Square商品</h2>
+        <h2 className="text-xl font-bold mb-6">商品一覧</h2>
         <div className="grid md:grid-cols-2 gap-x-12 gap-y-8">
           {categoryGroups.map((group) => (
             <section key={group.category.id}>
