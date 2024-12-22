@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, CarouselApi } from "@/components/ui/carousel"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import Image from "next/image"
-import type { CartItem, ECCategory, ECProduct, CategoryTree } from '@/lib/square/types'
+import type { CartItem, ECCategory, ECProduct, CategoryTree, ECProductVariation } from '@/lib/square/types'
 import { useCart } from '@/components/cart/cart-provider'
 
 // 金額を表示用の文字列に変換（日本円表示用）
@@ -35,6 +35,7 @@ interface DisplayProduct {
   imageUrl?: string;
   category: ECCategory;
   imageIds?: string[];
+  variations: ECProductVariation[];
 }
 
 // 型定義を追加
@@ -43,6 +44,10 @@ interface ImageBatchResponse {
   urls: string[];
 }
 
+/**
+ * メイン商品リストコンポーネント
+ * Square APIから商品情報を取得し、カテゴリごとに商品を表示する
+ */
 export function ProductList() {
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +84,7 @@ export function ProductList() {
 
         setCategoryGroups(groups);
 
-        // 商品一覧取得後、すべての画像IDを収集して一括プリフェッチ
+        // 商品��覧取得後、すべての画像IDを収集して一括プリフェッチ
         const allImageIds = data.ecProducts
           .flatMap(product => product.itemData?.imageIds || [])
           .filter(Boolean);
@@ -215,7 +220,14 @@ export function ProductList() {
                     ? `/api/square/image/${product.itemData.imageIds[0]}`
                     : '/images/placeholders/product-placeholder.jpg',
                   category: product.category,
-                  imageIds: product.itemData?.imageIds || []
+                  imageIds: product.itemData?.imageIds || [],
+                  variations: (product.itemData?.variations || []).map(variation => ({
+                    id: variation.id,
+                    name: variation.itemVariationData?.name || '',
+                    sku: variation.itemVariationData?.sku,
+                    price: Number(variation.itemVariationData?.priceMoney?.amount || 0),
+                    ordinal: variation.itemVariationData?.ordinal || 0
+                  }))
                 }))}
                 onAddToCart={handleAddToCart}
               />
@@ -233,6 +245,11 @@ interface ProductGroupViewProps {
   onAddToCart: (item: CartItem) => void;
 }
 
+/**
+ * カテゴリごとの商品グループを表示するコンポーネント
+ * @param items 表示する商品リスト
+ * @param onAddToCart カートに商品を追加する関数
+ */
 function ProductGroupView({ items, onAddToCart }: ProductGroupViewProps) {
   return (
     <div className="space-y-4">
@@ -251,7 +268,9 @@ function ProductGroupView({ items, onAddToCart }: ProductGroupViewProps) {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>{item.name}</DialogTitle>
+              <DialogTitle className="text-sm text-gray-500">
+                {item.category.name.replace('EC_', '')} &gt; {item.name}
+              </DialogTitle>
             </DialogHeader>
             <ProductModal product={item} onAddToCart={onAddToCart} />
           </DialogContent>
@@ -266,12 +285,26 @@ interface ProductModalProps {
   onAddToCart: (item: CartItem) => void;
 }
 
+/**
+ * 商品詳細モーダルコンポーネント
+ * 商品の詳細情報、画像、バリエーション選択、数量選択を表示する
+ * @param product 表示する商品情報
+ * @param onAddToCart カートに商品を追加する関数
+ */
 function ProductModal({ product, onAddToCart }: ProductModalProps) {
   const [quantity, setQuantity] = useState(1);
-  const [imageError, setImageError] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
+  const [selectedVariation, setSelectedVariation] = useState<ECProductVariation | null>(
+    product.variations && product.variations.length === 1 ? product.variations[0] : null
+  );
+
+  // バリエーションが選択されているかと数量が有効かをチェック
+  const hasVariations = product.variations && product.variations.length > 1;
+  const isValidSelection = !hasVariations || selectedVariation !== null;
+  const isValidQuantity = quantity > 0 && quantity <= 10;
+  const canAddToCart = isValidSelection && isValidQuantity;
 
   useEffect(() => {
     if (!api) {
@@ -289,7 +322,6 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
     const fetchImages = async () => {
       if (product.imageIds && product.imageIds.length > 0) {
         try {
-          // 一括で画像URLを取得
           const response = await fetch('/api/square/image/batch', {
             method: 'POST',
             headers: {
@@ -303,22 +335,12 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
           }
         } catch (error) {
           console.error('Error fetching images:', error);
-          setImageError(true);
         }
       }
     };
 
     fetchImages();
   }, [product.imageIds]);
-
-  const handleAddToCart = () => {
-    onAddToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      quantity,
-    });
-  };
 
   return (
     <div className="space-y-4">
@@ -374,32 +396,74 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
         )}
       </div>
 
-      {/* デバッグ情報 */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="text-xs text-gray-500 space-y-1 bg-gray-50 p-2 rounded">
-          <p>商品ID: {product.id}</p>
-          <p>カテゴリ: {product.category.name} (ID: {product.category.id})</p>
-          {product.imageIds && product.imageIds.length > 0 && (
-            <p>画像ID: {product.imageIds.join(', ')}</p>
-          )}
-          {imageError && (
-            <p className="text-yellow-600">※ 画像の読み込みに失敗しました</p>
-          )}
+      <div className="flex justify-between items-center">
+        <h3 className="text-xl font-medium">{product.name}</h3>
+        <p className="text-lg font-semibold text-right">
+          {formatPrice(selectedVariation?.price || product.price)}円
+        </p>
+      </div>
+
+      {product.description && (
+        <p className="text-sm text-gray-500">{product.description}</p>
+      )}
+
+      {hasVariations && (
+        <div className="space-y-2">
+          <label htmlFor="variation" className="text-sm font-medium">
+            バリエーション
+          </label>
+          <select
+            id="variation"
+            className="w-full rounded-md border border-input bg-background px-3 py-2"
+            value={selectedVariation?.id || ''}
+            onChange={(e) => {
+              const selected = product.variations.find(v => v.id === e.target.value);
+              setSelectedVariation(selected || null);
+            }}
+          >
+            <option value="">選択してください</option>
+            {product.variations.map((variation) => {
+              const priceDiff = variation.price - product.price;
+              return (
+                <option
+                  key={variation.id}
+                  value={variation.id}
+                >
+                  {variation.name}
+                  {priceDiff !== 0 ? ` (+${formatPrice(priceDiff)}円)` : ''}
+                </option>
+              );
+            })}
+          </select>
         </div>
       )}
 
-      <p className="text-lg font-semibold">{formatPrice(product.price)}円</p>
-      <p className="text-sm text-gray-500">{product.description}</p>
-      <div className="flex items-center space-x-2">
-        <Input
-          type="number"
-          value={quantity}
-          onChange={(e) => setQuantity(Number(e.target.value))}
-          min={1}
-          max={10}
-          className="w-20"
-        />
-        <Button onClick={handleAddToCart}>
+      <div className="space-y-4">
+        <div className="flex justify-end items-center gap-4">
+          <label htmlFor="quantity" className="text-sm font-medium whitespace-nowrap">
+            注文数
+          </label>
+          <Input
+            id="quantity"
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(Number(e.target.value))}
+            min={1}
+            max={10}
+            className="w-20"
+          />
+        </div>
+
+        <Button
+          onClick={() => onAddToCart({
+            id: selectedVariation?.id || product.id,
+            name: `${product.name}${selectedVariation ? ` - ${selectedVariation.name}` : ''}`,
+            price: selectedVariation?.price || product.price,
+            quantity,
+          })}
+          className="w-full"
+          disabled={!canAddToCart}
+        >
           カートに追加
         </Button>
       </div>

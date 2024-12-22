@@ -55,12 +55,22 @@ export interface ECCategory extends CategoryData {
   children?: ECCategory[];
 }
 
+// EC専用の商品バリエーション型
+export interface ECProductVariation {
+  id: string;
+  name: string;
+  sku?: string | null;
+  price: number;
+  ordinal: number;
+}
+
 // EC専用の商品型を更新
 export interface ECProduct extends CatalogObject {
   type: 'ITEM';
   itemData: CatalogItem;
   category: ECCategory;
   imageUrl?: string;
+  variations: ECProductVariation[];  // バリエーション情報を追加
 }
 
 // カテゴリツリー用の型
