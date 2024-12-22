@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, CarouselApi } from "@/components/ui/carousel"
 import Image from "next/image"
 import { DEMO_PRODUCTS } from '@/lib/constants/demo-products'
-import type { CartItem } from '@/lib/square/types'
+import type { CartItem, ECCategory, ECProduct, CategoryTree } from '@/lib/square/types'
 import { useCart } from '@/components/cart/cart-provider'
 
 // 金額を表示用の文字列に変換（日本円表示用）
@@ -16,33 +16,14 @@ const formatPrice = (amount: number | bigint | null | undefined): string => {
 };
 
 // デバッグデータの型定義を更新
-interface CategoryData {
-  id: string;
-  name: string;
-  parentId?: string | null;
-}
-
-interface ProductData {
-  id: string;
-  name: string;
-  description?: string | null;
-  categoryId?: string | null;
-  variations: Array<{
-    id: string;
-    name: string;
-    price: number;
-  }>;
-  imageIds?: string[];
-}
-
 interface SquareApiDebugData {
-  categories: { [key: string]: CategoryData };
-  products: ProductData[];
+  categoryTree: CategoryTree;
+  ecProducts: ECProduct[];
 }
 
 interface CategoryGroup {
-  category: CategoryData;
-  products: ProductData[];
+  category: ECCategory;
+  products: ECProduct[];
 }
 
 // 商品表示用の共通インターフェース
@@ -52,7 +33,7 @@ interface DisplayProduct {
   description?: string | null;
   price: number;
   imageUrl?: string;
-  categoryId?: string | null;
+  category: ECCategory;
   imageIds?: string[];
 }
 
@@ -64,7 +45,6 @@ interface ImageBatchResponse {
 
 export function ProductList() {
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
-  const [uncategorizedProducts, setUncategorizedProducts] = useState<ProductData[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [debugData, setDebugData] = useState<SquareApiDebugData | null>(null);
@@ -84,28 +64,24 @@ export function ProductList() {
         const data: SquareApiDebugData = await response.json();
         setDebugData(data);
 
-        if (!data.categories || !data.products) {
+        if (!data.categoryTree || !data.ecProducts) {
           setError('商品の取得に失敗しました。');
           return;
         }
 
         // カテゴリごとに商品をグループ化
-        const groups = Object.values(data.categories)
+        const groups = Object.values(data.categoryTree.allCategories)
           .map((category) => ({
             category,
-            products: data.products.filter(product => product.categoryId === category.id)
+            products: data.ecProducts.filter(product => product.category.id === category.id)
           }))
           .filter((group) => group.products.length > 0);
 
-        // カテゴリなし商品の抽出
-        const uncategorized = data.products.filter(product => !product.categoryId);
-
         setCategoryGroups(groups);
-        setUncategorizedProducts(uncategorized);
 
         // 商品一覧取得後、すべての画像IDを収集して一括プリフェッチ
-        const allImageIds = data.products
-          .flatMap(product => product.imageIds || [])
+        const allImageIds = data.ecProducts
+          .flatMap(product => product.itemData?.imageIds || [])
           .filter(Boolean);
 
         if (allImageIds.length > 0) {
@@ -143,6 +119,22 @@ export function ProductList() {
     fetchProducts();
   }, []);
 
+  if (error) {
+    return (
+      <div className="col-span-2 text-red-500 text-center">
+        {error}
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="col-span-2 text-center">
+        商品を読み込み中...
+      </div>
+    );
+  }
+
   return (
     <div className="grid md:grid-cols-2 gap-x-12 gap-y-8 mt-8">
       {/* デバッグ情報の詳細表示 */}
@@ -154,10 +146,17 @@ export function ProductList() {
               <h4 className="font-semibold mb-2">カテゴリ構造:</h4>
               <pre className="text-xs overflow-auto bg-white p-2 rounded">
                 {JSON.stringify({
-                  categories: Object.values(debugData.categories || {}).map(cat => ({
+                  root: debugData.categoryTree.root,
+                  allCategories: Object.values(debugData.categoryTree.allCategories).map(cat => ({
                     id: cat.id,
                     name: cat.name,
-                    parentId: cat.parentId
+                    parentId: cat.parentId,
+                    isECCategory: cat.isECCategory,
+                    children: cat.children?.map(child => ({
+                      id: child.id,
+                      name: child.name,
+                      parentId: child.parentId
+                    }))
                   }))
                 }, null, 2)}
               </pre>
@@ -169,23 +168,16 @@ export function ProductList() {
                   name: g.category.name,
                   itemCount: g.products.length,
                   items: g.products.map(product => ({
-                    name: product.name,
-                    categoryId: product.categoryId,
-                    imageIds: product.imageIds
+                    name: product.itemData?.name,
+                    category: {
+                      id: product.category.id,
+                      name: product.category.name
+                    },
+                    imageIds: product.itemData?.imageIds
                   }))
                 })), null, 2)}
               </pre>
             </div>
-          </div>
-          <div className="mt-4">
-            <h4 className="font-semibold mb-2">未分類商品:</h4>
-            <pre className="text-xs overflow-auto bg-white p-2 rounded">
-              {JSON.stringify(uncategorizedProducts.map(product => ({
-                name: product.name,
-                categoryId: product.categoryId,
-                imageIds: product.imageIds
-              })), null, 2)}
-            </pre>
           </div>
           <div className="mt-4">
             <h4 className="font-semibold mb-2">APIレスポンス (生データ):</h4>
@@ -212,7 +204,11 @@ export function ProductList() {
                   imageUrl: item.itemData?.imageIds?.[0]
                     ? `/api/square/image/${item.itemData.imageIds[0]}`
                     : '/images/placeholders/product-placeholder.jpg',
-                  categoryId: item.itemData?.categories?.[0]?.id || item.itemData?.categoryId || null,
+                  category: {
+                    id: item.itemData?.categories?.[0]?.id || '',
+                    name: 'デモカテゴリ',
+                    isECCategory: true
+                  },
                   imageIds: item.itemData?.imageIds || []
                 }))}
                 onAddToCart={handleAddToCart}
@@ -234,62 +230,32 @@ export function ProductList() {
               <ProductGroupView
                 items={group.products.map(product => ({
                   id: product.id,
-                  name: product.name,
-                  description: product.description,
-                  price: product.variations[0]?.price || 0,
-                  imageUrl: product.imageIds?.[0]
-                    ? `/api/square/image/${product.imageIds[0]}`
+                  name: product.itemData?.name || '',
+                  description: product.itemData?.description,
+                  price: Number(product.itemData?.variations?.[0]?.itemVariationData?.priceMoney?.amount || 0),
+                  imageUrl: product.itemData?.imageIds?.[0]
+                    ? `/api/square/image/${product.itemData.imageIds[0]}`
                     : '/images/placeholders/product-placeholder.jpg',
-                  categoryId: product.categoryId,
-                  imageIds: product.imageIds
+                  category: product.category,
+                  imageIds: product.itemData?.imageIds || []
                 }))}
                 onAddToCart={handleAddToCart}
               />
             </section>
           ))}
-
-          {uncategorizedProducts.length > 0 && (
-            <section>
-              <h2 className="text-lg tracking-wide text-muted-foreground mb-4">その他</h2>
-              <ProductGroupView
-                items={uncategorizedProducts.map(product => ({
-                  id: product.id,
-                  name: product.name,
-                  description: product.description,
-                  price: product.variations[0]?.price || 0,
-                  imageUrl: product.imageIds?.[0]
-                    ? `/api/square/image/${product.imageIds[0]}`
-                    : '/images/placeholders/product-placeholder.jpg',
-                  categoryId: product.categoryId,
-                  imageIds: product.imageIds
-                }))}
-                onAddToCart={handleAddToCart}
-              />
-            </section>
-          )}
         </div>
       </div>
-
-      {error && (
-        <div className="col-span-2 text-red-500 text-center">
-          {error}
-        </div>
-      )}
-
-      {isLoading && (
-        <div className="col-span-2 text-center">
-          商品を読み込み中...
-        </div>
-      )}
     </div>
   );
 }
 
-// 商品グループコンポーネント
-function ProductGroupView({ items, onAddToCart }: {
-  items: DisplayProduct[],
-  onAddToCart: (item: CartItem) => void
-}) {
+// ProductGroupViewコンポーネントの型定義を更新
+interface ProductGroupViewProps {
+  items: DisplayProduct[];
+  onAddToCart: (item: CartItem) => void;
+}
+
+function ProductGroupView({ items, onAddToCart }: ProductGroupViewProps) {
   return (
     <div className="space-y-4">
       {items.map(item => (
@@ -429,18 +395,21 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
           />
         )}
       </div>
-      <div className="text-xs text-gray-500 space-y-1 bg-gray-50 p-2 rounded">
-        <p>商品ID: {product.id}</p>
-        {product.categoryId && (
-          <p>カテゴリID: {product.categoryId}</p>
-        )}
-        {product.imageIds && product.imageIds.length > 0 && (
-          <p>画像ID: {product.imageIds.join(', ')}</p>
-        )}
-        {imageError && (
-          <p className="text-yellow-600">※ 画像の読み込みに失敗しました</p>
-        )}
-      </div>
+
+      {/* デバッグ情報 */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="text-xs text-gray-500 space-y-1 bg-gray-50 p-2 rounded">
+          <p>商品ID: {product.id}</p>
+          <p>カテゴリ: {product.category.name} (ID: {product.category.id})</p>
+          {product.imageIds && product.imageIds.length > 0 && (
+            <p>画像ID: {product.imageIds.join(', ')}</p>
+          )}
+          {imageError && (
+            <p className="text-yellow-600">※ 画像の読み込みに失敗しました</p>
+          )}
+        </div>
+      )}
+
       <p className="text-lg font-semibold">{formatPrice(product.price)}円</p>
       <p className="text-sm text-gray-500">{product.description}</p>
       <div className="flex items-center space-x-2">

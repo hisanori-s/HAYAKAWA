@@ -23,6 +23,10 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'items-images.s3.us-west-2.amazonaws.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'items-images-production.s3.us-west-2.amazonaws.com',
       }
     ],
     minimumCacheTTL: 60 * 60 * 24,

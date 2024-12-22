@@ -1,4 +1,5 @@
 import { Client, Environment, CatalogObject } from 'square';
+import { ECCategory, ECProduct, CategoryTree } from './types';
 
 // 環境変数の存在チェック
 if (!process.env.SQUARE_ACCESS_TOKEN) {
@@ -13,12 +14,6 @@ if (!process.env.SQUARE_ENVIRONMENT) {
   throw new Error('SQUARE_ENVIRONMENT is not defined');
 }
 
-// クライアントの設定をログ出力
-console.log('Initializing Square client with:', {
-  environment: process.env.SQUARE_ENVIRONMENT,
-  hasAccessToken: !!process.env.SQUARE_ACCESS_TOKEN
-});
-
 // Square クライアントのインスタンスを作成
 export const squareClient = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
@@ -28,49 +23,53 @@ export const squareClient = new Client({
   userAgentDetail: 'hayakawa-ec'
 });
 
-// 環境変数の値をエクスポート（必要な場合に使用）
+// 環境変数の値をエクスポート
 export const SQUARE_LOCATION_ID = process.env.SQUARE_LOCATION_ID;
 
-// カテゴリ情報のみを取得する関数
-export async function fetchCategories() {
-  try {
-    const { result } = await squareClient.catalogApi.listCatalog(
-      undefined,
-      'CATEGORY'
-    );
+// EC関連のカテゴリかどうかを判定する関数
+const EC_CATEGORY_ID = "RZFU2VEHUVDIZKMR4OUVBLMW";
 
-    console.log('Categories response:', JSON.stringify(result, null, 2));
-    return result.objects || [];
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-    throw error;
+function isECCategory(category: { id: string; parentId?: string | null }): boolean {
+  return category.id === EC_CATEGORY_ID || category.parentId === EC_CATEGORY_ID;
+}
+
+// カテゴリツリーを構築する関数
+function buildCategoryTree(categories: { [key: string]: { id: string; name: string; parentId?: string | null } }): CategoryTree {
+  const root = categories[EC_CATEGORY_ID];
+  if (!root) {
+    throw new Error('EC root category not found');
   }
+
+  const ecCategories: { [key: string]: ECCategory } = {};
+
+  // まずすべてのカテゴリをECCategory形式に変換
+  Object.values(categories).forEach(category => {
+    if (isECCategory(category)) {
+      ecCategories[category.id] = {
+        ...category,
+        isECCategory: true,
+        children: []
+      };
+    }
+  });
+
+  // 親子関係を構築
+  Object.values(ecCategories).forEach(category => {
+    if (category.parentId && ecCategories[category.parentId]) {
+      ecCategories[category.parentId].children = ecCategories[category.parentId].children || [];
+      ecCategories[category.parentId].children!.push(category);
+    }
+  });
+
+  return {
+    root: ecCategories[EC_CATEGORY_ID],
+    allCategories: ecCategories
+  };
 }
 
-// カタログデータの型定義
-interface CategoryData {
-  id: string;
-  name: string;
-  parentId?: string | null;
-}
-
-interface ProductData {
-  id: string;
-  name: string;
-  description?: string | null;
-  categoryId?: string | null;
-  variations: Array<{
-    id: string;
-    name: string;
-    price: number;
-  }>;
-  imageIds?: string[];
-}
-
-// カタログデータの処理関数
+// カタログデータの処理関数を更新
 function processCatalogData(catalogData: { objects?: CatalogObject[] }) {
-  const categories: { [key: string]: CategoryData } = {};
-  const products: ProductData[] = [];
+  const categories: { [key: string]: { id: string; name: string; parentId?: string | null } } = {};
 
   // カテゴリー情報の抽出
   catalogData.objects
@@ -85,57 +84,68 @@ function processCatalogData(catalogData: { objects?: CatalogObject[] }) {
       }
     });
 
-  // 商品情報の抽出（カテゴリー情報を含む）
-  catalogData.objects
-    ?.filter((obj: CatalogObject) => obj.type === 'ITEM')
-    .forEach((item: CatalogObject) => {
-      if (item.itemData) {
-        // カテゴリIDの取得（categories配列の最初の要素のIDを使用）
-        const categoryId = item.itemData.categories?.[0]?.id || item.itemData.categoryId || null;
+  // EC関連の��テゴリツリーを構築
+  const categoryTree = buildCategoryTree(categories);
 
-        products.push({
-          id: item.id,
-          name: item.itemData.name || 'Unnamed Product',
-          description: item.itemData.description || null,
-          categoryId: categoryId,
-          variations: (item.itemData.variations || []).map((v) => ({
-            id: v.id,
-            name: v.itemVariationData?.name || 'Default Variation',
-            price: v.itemVariationData?.priceMoney?.amount ? Number(v.itemVariationData.priceMoney.amount) : 0
-          })),
-          imageIds: item.itemData.imageIds || []
-        });
-      }
-    });
+  // 商品情報の抽出（ECカテゴリに属する商品のみ）
+  const ecProducts: ECProduct[] = [];
 
-  return { categories, products };
+  // 有効な商品のみをフィルタリング
+  const validProducts = (catalogData.objects || []).filter((obj): obj is CatalogObject & {
+    type: 'ITEM';
+    itemData: NonNullable<CatalogObject['itemData']> & {
+      categories: Array<{ id: string }>;
+    };
+  } => {
+    if (obj.type !== 'ITEM' || !obj.itemData?.categories?.[0]?.id) {
+      return false;
+    }
+    const categoryId = obj.itemData.categories[0].id;
+    return categoryId in categoryTree.allCategories;
+  });
+
+  // 有効な商品をECProduct形式に変換
+  validProducts.forEach((item) => {
+    const categoryId = item.itemData.categories[0].id;
+    const product: ECProduct = {
+      ...item,
+      type: 'ITEM',
+      itemData: item.itemData,
+      category: categoryTree.allCategories[categoryId],
+      imageUrl: undefined
+    };
+    ecProducts.push(product);
+  });
+
+  return { categoryTree, ecProducts };
 }
 
-// カタログ情報取得用の関数
+// カタログ情報取得用の関数を更新
 export async function fetchCatalogWithCategories() {
   try {
-    console.log('Fetching complete catalog data...');
+    console.log('Fetching EC catalog data...');
 
-    // 全てのカタログオブジェクトを取得
     const { result } = await squareClient.catalogApi.listCatalog();
 
     if (!result || !result.objects) {
       console.log('No catalog data found');
-      return { categories: {}, products: [] };
+      return { categoryTree: null, ecProducts: [] };
     }
 
     // カタログデータを処理
     const processedData = processCatalogData(result);
 
-    console.log('Processed catalog data:', {
-      categoriesCount: Object.keys(processedData.categories).length,
-      productsCount: processedData.products.length,
-      productsWithImages: processedData.products.filter(p => p.imageIds && p.imageIds.length > 0).length
+    console.log('Processed EC catalog data:', {
+      categoriesCount: Object.keys(processedData.categoryTree.allCategories).length,
+      productsCount: processedData.ecProducts.length,
+      productsWithImages: processedData.ecProducts.filter(p =>
+        p.itemData?.imageIds && p.itemData.imageIds.length > 0
+      ).length
     });
 
     return processedData;
   } catch (error) {
-    console.error('Error fetching catalog:', error);
+    console.error('Error fetching EC catalog:', error);
     throw error;
   }
 }

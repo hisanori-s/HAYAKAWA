@@ -1,4 +1,4 @@
-import { CatalogObject } from 'square';
+import { CatalogObject, CatalogItem } from 'square';
 
 // CategoryNode型を追加
 export type CategoryNode = {
@@ -40,4 +40,31 @@ export interface ExtendedCheckoutOptions {
 // 型定義のマージ
 declare module 'square' {
   interface CheckoutOptions extends ExtendedCheckoutOptions {}
+}
+
+// EC用の基本カテゴリ型
+export interface CategoryData {
+  id: string;
+  name: string;
+  parentId?: string | null;
+}
+
+// EC専用のカテゴリ型
+export interface ECCategory extends CategoryData {
+  isECCategory: boolean;
+  children?: ECCategory[];
+}
+
+// EC専用の商品型を更新
+export interface ECProduct extends CatalogObject {
+  type: 'ITEM';
+  itemData: CatalogItem;
+  category: ECCategory;
+  imageUrl?: string;
+}
+
+// カテゴリツリー用の型
+export interface CategoryTree {
+  root: ECCategory;
+  allCategories: { [key: string]: ECCategory };
 }
