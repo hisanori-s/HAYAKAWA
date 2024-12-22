@@ -145,7 +145,7 @@ export function ProductList() {
 
   return (
     <div className="grid md:grid-cols-2 gap-x-12 gap-y-8 mt-8">
-      {/* モバッグ情報の詳細表示 */}
+      {/* デバッグ情報の詳細表示 */}
       {process.env.NODE_ENV === 'development' && debugData && (
         <div className="col-span-2 mb-8 p-4 bg-gray-100 rounded">
           <h3 className="font-bold mb-4">Debug Info:</h3>
