@@ -36,6 +36,8 @@ interface DisplayProduct {
   category: ECCategory;
   imageIds?: string[];
   variations: ECProductVariation[];
+  trackInventory: boolean;
+  isSoldOut: boolean;
 }
 
 // 型定義を追加
@@ -211,24 +213,31 @@ export function ProductList() {
                 {group.category.name}
               </h2>
               <ProductGroupView
-                items={group.products.map(product => ({
-                  id: product.id,
-                  name: product.itemData?.name || '',
-                  description: product.itemData?.description,
-                  price: Number(product.itemData?.variations?.[0]?.itemVariationData?.priceMoney?.amount || 0),
-                  imageUrl: product.itemData?.imageIds?.[0]
-                    ? `/api/square/image/${product.itemData.imageIds[0]}`
-                    : '/images/placeholders/product-placeholder.jpg',
-                  category: product.category,
-                  imageIds: product.itemData?.imageIds || [],
-                  variations: (product.itemData?.variations || []).map(variation => ({
-                    id: variation.id,
-                    name: variation.itemVariationData?.name || '',
-                    sku: variation.itemVariationData?.sku,
-                    price: Number(variation.itemVariationData?.priceMoney?.amount || 0),
-                    ordinal: variation.itemVariationData?.ordinal || 0
-                  }))
-                }))}
+                items={group.products.map(product => {
+                  const firstVariation = product.itemData?.variations?.[0]?.itemVariationData;
+                  return {
+                    id: product.id,
+                    name: product.itemData?.name || '',
+                    description: product.itemData?.description,
+                    price: Number(firstVariation?.priceMoney?.amount || 0),
+                    imageUrl: product.itemData?.imageIds?.[0]
+                      ? `/api/square/image/${product.itemData.imageIds[0]}`
+                      : '/images/placeholders/product-placeholder.jpg',
+                    category: product.category,
+                    imageIds: product.itemData?.imageIds || [],
+                    variations: (product.itemData?.variations || []).map(variation => ({
+                      id: variation.id,
+                      name: variation.itemVariationData?.name || '',
+                      sku: variation.itemVariationData?.sku,
+                      price: Number(variation.itemVariationData?.priceMoney?.amount || 0),
+                      ordinal: variation.itemVariationData?.ordinal || 0,
+                      trackInventory: variation.itemVariationData?.trackInventory || false,
+                      soldOut: variation.itemVariationData?.locationOverrides?.some(override => override.soldOut) || false
+                    })),
+                    trackInventory: firstVariation?.trackInventory || false,
+                    isSoldOut: firstVariation?.locationOverrides?.some(override => override.soldOut) || false
+                  };
+                })}
                 onAddToCart={handleAddToCart}
               />
             </section>
@@ -256,14 +265,21 @@ function ProductGroupView({ items, onAddToCart }: ProductGroupViewProps) {
       {items.map(item => (
         <Dialog key={item.id}>
           <DialogTrigger asChild>
-            <div className="flex justify-between items-baseline cursor-pointer hover:bg-gray-100 p-2 rounded transition-colors duration-200">
+            <div className={`flex justify-between items-baseline cursor-pointer hover:bg-gray-100 p-2 rounded transition-colors duration-200 ${
+              item.trackInventory && item.isSoldOut ? 'text-gray-400' : ''
+            }`}>
               <div className="flex items-center gap-4">
                 <h3 className="font-medium">{item.name}</h3>
               </div>
               <div className="border-b border-dotted border-muted-foreground flex-grow mx-4" />
-              <p className="font-medium">
-                {formatPrice(item.price)}円
-              </p>
+              <div className="flex items-center gap-2">
+                {item.trackInventory && item.isSoldOut && (
+                  <span className="text-red-500 text-sm whitespace-nowrap">売切御免</span>
+                )}
+                <p className={`font-medium ${item.trackInventory && item.isSoldOut ? 'text-gray-400' : ''}`}>
+                  {formatPrice(item.price)}円
+                </p>
+              </div>
             </div>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
@@ -304,7 +320,8 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
   const hasVariations = product.variations && product.variations.length > 1;
   const isValidSelection = !hasVariations || selectedVariation !== null;
   const isValidQuantity = quantity > 0 && quantity <= 10;
-  const canAddToCart = isValidSelection && isValidQuantity;
+  const isSoldOut = product.trackInventory && product.isSoldOut;
+  const canAddToCart = isValidSelection && isValidQuantity && !isSoldOut;
 
   useEffect(() => {
     if (!api) {
@@ -398,7 +415,7 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
 
       <div className="flex justify-between items-center">
         <h3 className="text-xl font-medium">{product.name}</h3>
-        <p className="text-lg font-semibold text-right">
+        <p className={`text-lg font-semibold text-right ${isSoldOut ? 'text-gray-400' : ''}`}>
           {formatPrice(selectedVariation?.price || product.price)}円
         </p>
       </div>
@@ -451,6 +468,7 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
             min={1}
             max={10}
             className="w-20"
+            disabled={isSoldOut}
           />
         </div>
 
@@ -464,7 +482,7 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
           className="w-full"
           disabled={!canAddToCart}
         >
-          カートに追加
+          {isSoldOut ? '売り切れ' : 'カートに追加'}
         </Button>
       </div>
     </div>

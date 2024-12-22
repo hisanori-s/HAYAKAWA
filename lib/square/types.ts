@@ -62,15 +62,27 @@ export interface ECProductVariation {
   sku?: string | null;
   price: number;
   ordinal: number;
+  trackInventory?: boolean;
+  soldOut?: boolean;
+}
+
+// ロケーション固有の在庫設定型
+export interface LocationInventoryOverride {
+  locationId: string;
+  trackInventory?: boolean;
+  soldOut?: boolean;
 }
 
 // EC専用の商品型を更新
 export interface ECProduct extends CatalogObject {
   type: 'ITEM';
-  itemData: CatalogItem;
+  itemData: CatalogItem & {
+    trackInventory?: boolean;
+    locationOverrides?: LocationInventoryOverride[];
+  };
   category: ECCategory;
   imageUrl?: string;
-  variations: ECProductVariation[];  // バリエーション情報を追加
+  variations: ECProductVariation[];
 }
 
 // カテゴリツリー用の型
