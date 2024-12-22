@@ -84,7 +84,7 @@ function processCatalogData(catalogData: { objects?: CatalogObject[] }) {
       }
     });
 
-  // EC関連の��テゴリツリーを構築
+  // EC関連のカテゴリツリーを構築
   const categoryTree = buildCategoryTree(categories);
 
   // 商品情報の抽出（ECカテゴリに属する商品のみ）
@@ -97,21 +97,28 @@ function processCatalogData(catalogData: { objects?: CatalogObject[] }) {
       categories: Array<{ id: string }>;
     };
   } => {
-    if (obj.type !== 'ITEM' || !obj.itemData?.categories?.[0]?.id) {
+    if (obj.type !== 'ITEM' || !obj.itemData?.categories) {
       return false;
     }
-    const categoryId = obj.itemData.categories[0].id;
-    return categoryId in categoryTree.allCategories;
+    // 商品の全てのカテゴリをチェック
+    return obj.itemData.categories.some(category =>
+      category?.id && category.id in categoryTree.allCategories
+    );
   });
 
   // 有効な商品をECProduct形式に変換
   validProducts.forEach((item) => {
-    const categoryId = item.itemData.categories[0].id;
+    // ECカテゴリに属するカテゴリを探す
+    const ecCategory = item.itemData.categories.find(category =>
+      category?.id && category.id in categoryTree.allCategories
+    );
+    if (!ecCategory?.id) return; // 念のためのチェック
+
     const product: ECProduct = {
       ...item,
       type: 'ITEM',
       itemData: item.itemData,
-      category: categoryTree.allCategories[categoryId],
+      category: categoryTree.allCategories[ecCategory.id],
       imageUrl: undefined
     };
     ecProducts.push(product);
