@@ -31,6 +31,8 @@
 │   │       │   │   └── route.ts
 │   │       │   └── [id]
 │   │       │       └── route.ts
+│   │       ├── inventory
+│   │       │   └── route.ts
 │   │       └── test
 │   │           └── route.ts
 │   ├── cart
@@ -124,6 +126,7 @@ directories:
           catalog: "商品カタログデータの取得"
           checkout: "決済処理とチェックアウトセッション"
           image: "商品画像の取得（単体・バッチ）"
+          inventory: "在庫数の取得と管理"
           env-check: "環境変数の検証"
           test: "APIテスト用エンドポイント"
     cart:
@@ -222,7 +225,7 @@ development_status:
   square_integration:
     catalog: "実装済み - 商品データの取得"
     checkout: "実装済み - 決済フロー"
-    images: "最適化完了 - プリフェッチ・キャッシ���実装"
+    images: "最適化完了 - プリフェッチ・キャッシュ実装"
     categories: "実装中 - カテゴリ管理の強化"
 
   ui_components:
