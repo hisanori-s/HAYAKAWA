@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, CarouselApi } from "@/components/ui/carousel"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import Image from "next/image"
 import type { CartItem, ECCategory, ECProduct, CategoryTree } from '@/lib/square/types'
 import { useCart } from '@/components/cart/cart-provider'
@@ -138,52 +139,60 @@ export function ProductList() {
     <div className="grid md:grid-cols-2 gap-x-12 gap-y-8 mt-8">
       {/* デバッグ情報の詳細表示 */}
       {process.env.NODE_ENV === 'development' && debugData && (
-        <div className="col-span-2 mb-8 p-4 bg-gray-100 rounded">
-          <h3 className="font-bold mb-4">Debug Info:</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-semibold mb-2">カテゴリ構造:</h4>
-              <pre className="text-xs overflow-auto bg-white p-2 rounded">
-                {JSON.stringify({
-                  root: debugData.categoryTree.root,
-                  allCategories: Object.values(debugData.categoryTree.allCategories).map(cat => ({
-                    id: cat.id,
-                    name: cat.name,
-                    parentId: cat.parentId,
-                    isECCategory: cat.isECCategory,
-                    children: cat.children?.map(child => ({
-                      id: child.id,
-                      name: child.name,
-                      parentId: child.parentId
-                    }))
-                  }))
-                }, null, 2)}
-              </pre>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">カテゴリ別商品数:</h4>
-              <pre className="text-xs overflow-auto bg-white p-2 rounded">
-                {JSON.stringify(categoryGroups.map(g => ({
-                  name: g.category.name,
-                  itemCount: g.products.length,
-                  items: g.products.map(product => ({
-                    name: product.itemData?.name,
-                    category: {
-                      id: product.category.id,
-                      name: product.category.name
-                    },
-                    imageIds: product.itemData?.imageIds
-                  }))
-                })), null, 2)}
-              </pre>
-            </div>
-          </div>
-          <div className="mt-4">
-            <h4 className="font-semibold mb-2">APIレスポンス (生データ):</h4>
-            <pre className="text-xs overflow-auto bg-white p-2 rounded">
-              {JSON.stringify(debugData, null, 2)}
-            </pre>
-          </div>
+        <div className="col-span-2 mb-8">
+          <Accordion type="single" collapsible>
+            <AccordionItem value="debug-info">
+              <AccordionTrigger className="bg-gray-100 p-4 rounded-t">
+                <h3 className="font-bold">Debug Info</h3>
+              </AccordionTrigger>
+              <AccordionContent className="bg-gray-100 p-4 rounded-b">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-semibold mb-2">カテゴリ構造:</h4>
+                    <pre className="text-xs overflow-auto bg-white p-2 rounded">
+                      {JSON.stringify({
+                        root: debugData.categoryTree.root,
+                        allCategories: Object.values(debugData.categoryTree.allCategories).map(cat => ({
+                          id: cat.id,
+                          name: cat.name,
+                          parentId: cat.parentId,
+                          isECCategory: cat.isECCategory,
+                          children: cat.children?.map(child => ({
+                            id: child.id,
+                            name: child.name,
+                            parentId: child.parentId
+                          }))
+                        }))
+                      }, null, 2)}
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">カテゴリ別商品数:</h4>
+                    <pre className="text-xs overflow-auto bg-white p-2 rounded">
+                      {JSON.stringify(categoryGroups.map(g => ({
+                        name: g.category.name,
+                        itemCount: g.products.length,
+                        items: g.products.map(product => ({
+                          name: product.itemData?.name,
+                          category: {
+                            id: product.category.id,
+                            name: product.category.name
+                          },
+                          imageIds: product.itemData?.imageIds
+                        }))
+                      })), null, 2)}
+                    </pre>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <h4 className="font-semibold mb-2">APIレスポンス (生データ):</h4>
+                  <pre className="text-xs overflow-auto bg-white p-2 rounded">
+                    {JSON.stringify(debugData, null, 2)}
+                  </pre>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       )}
 
