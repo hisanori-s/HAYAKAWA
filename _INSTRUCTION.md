@@ -1,183 +1,125 @@
-# Square ECサイト開発 - カテゴリ取得の改善
+# Square ECサイト開発 - カート商品の在庫確認機能
 
 ## 現在の状況
-1. 金額表示の修正が完了
-   - Square APIからの金額をそのまま使用するように修正
-   - デモ商品の金額も円単位に統一
-   - 不要な金額変換処理を削除
+1. 在庫管理機能の実装が完了
+   - Square Inventory APIによる在庫数取得
+   - 商品詳細での在庫数表示
+   - 在庫数に基づく購入数制限
 
-2. カテゴリ取得の課題
-   - 現状はすべてのカテゴリを取得している
-   - 親カテゴリ「EC」の子カテゴリのみに限定したい
-   - カテゴリ構造の整理が必要
+2. カート機能の現状
+   - LocalStorageによる永続化
+   - 商品の追加・削除
+   - 数量変更機能
+   - 決済処理連携
 
-## 確認済みの実装状況
-1. カタログ情報の取得
+## 実装すべき機能
+1. カート内商品の在庫確認機能
+   - 決済ボタンクリック時に在庫確認
+   - 在庫不足時のアラート表示
+   - ユーザーによる数量調整の促進
+
+2. 確認すべき条件
+   - 在庫数 < 注文数：在庫不足
+   - 在庫数 = 0：在庫切れ
+   - 在庫管理していない商品：チェック不要
+
+## 実装手順
+1. 在庫確認ロジックの実装
    ```typescript
-   // lib/square/client.ts
-   export async function fetchCatalogWithCategories() {
-     // 現状はすべてのカテゴリを取得
-     const { result } = await squareClient.catalogApi.listCatalog();
-     // ...
+   // 実装すべき関数例
+   async function validateCartInventory(cartItems: CartItem[]): Promise<{
+     isValid: boolean;
+     invalidItems: Array<{
+       item: CartItem;
+       availableQuantity: number;
+     }>;
+   }> {
+     // 在庫管理している商品のIDを抽出
+     // Square Inventory APIで在庫数を取得
+     // カート内数量と在庫数を比較
+     // 結果を返却
    }
    ```
 
-2. カテゴリデータの構造（現在の取得データ）
+2. アラート表示の実装
    ```typescript
-   // ECカテゴリとその子カテゴリの情報
-   const EC_CATEGORY = {
-     id: "RZFU2VEHUVDIZKMR4OUVBLMW",
-     name: "EC",
-     parentId: null
-   };
-
-   const EC_CHILD_CATEGORIES = [
-     {
-       id: "65DGOSQZ3YRXUCIAPWA2DZH7",
-       name: "EC_餃子",
-       parentId: "RZFU2VEHUVDIZKMR4OUVBLMW"
-     },
-     {
-       id: "QYRJZCJKYYEHSJKN5PKG74RB",
-       name: "EC_デザート",
-       parentId: "RZFU2VEHUVDIZKMR4OUVBLMW"
-     },
-     {
-       id: "E2VNV4T6M2BQ6T2WHLHUUE2Y",
-       name: "EC_グッズ",
-       parentId: "RZFU2VEHUVDIZKMR4OUVBLMW"
-     }
-   ];
-   ```
-
-## 次のステップ
-1. カテゴリフィルタリングの実装
-   - ECカテゴリ（id: RZFU2VEHUVDIZKMR4OUVBLMW）の子カテゴリのみを抽出
-   - 対象外のカテゴリ（店舗用カテゴリ等）を除外
-   - 商品データもEC関連カテゴリに属するもののみに限定
-
-2. データ構造の最適化
-   ```typescript
-   // 追加すべき型定義の例
-   interface ECCategory extends CategoryData {
-     isECCategory: boolean;
-     children?: ECCategory[];
-   }
-
-   interface ECProduct extends ProductData {
-     category: ECCategory;
+   // アラートメッセージの例
+   function getInventoryAlertMessage(invalidItems: InvalidItem[]): string {
+     return `以下の商品の在庫が不足しています：\n
+     ${invalidItems.map(item =>
+       `・${item.name}: 在庫数 ${item.availableQuantity}個（注文数 ${item.quantity}個）`
+     ).join('\n')}
+     \n数量を調整してください。`;
    }
    ```
-
-3. 実装手順
-   a. `lib/square/client.ts`の修正
-      - カテゴリフィルタリング関数の実装
-      - EC関連商品のみを取得する処理の追加
-
-   b. `lib/square/types.ts`の更新
-      - EC用の型定義の追加
-      - カテゴリ階層構造の型の追加
-
-   c. `components/product-list.tsx`の調整
-      - フィルタリング済みデータの表示対応
-      - デバッグ表示の改善
 
 ## 技術的な注意点
-1. Square API
-   - カテゴリ取得時のフィルタリング
-   - 親子関係の効率的な取得方法
-   - 不要なデータの除外による最適化
+1. 在庫確認のタイミング
+   - 決済ボタンクリック時に実行
+   - 確認中はローディング表示
+   - エラー時は決済処理に進まない
 
-2. パフォーマンス
-   - カテゴリフィルタリングのタイミング（API取得時）
-   - 必要なデータのみを取得する仕組み
-   - キャッシュの活用
+2. ユーザー体験の考慮
+   - 明確なエラーメッセージ
+   - 在庫数の表示
+   - 数量調整への誘導
 
-## 次のチャットでの作業指示
-1. `lib/square/client.ts`の修正
-   - ECカテゴリフィルタリング関数の実装
-   - 商品データのフィルタリング処理の追加
+3. エラーハンドリング
+   - API通信エラーの処理
+   - タイムアウト処理
+   - リトライロジック
 
-2. 型定義の更新
-   - EC専用の型定義の追加
-   - カテゴリ階層構造の型の実装
+## 修正が必要なファイル
+1. `components/cart/cart-provider.tsx`
+   - 在庫確認ロジックの追加
+   - 決済前の確認処理
 
-3. 表示コンポーネントの調整
-   - フィルタリング済みデータの表示対応
-   - デバッグ情報の改善
+2. `components/cart/cart-items.tsx`
+   - エラーメッセージ表示
+   - 在庫状態の表示
+
+3. `lib/square/client.ts`
+   - 在庫確認用の関数追加
+   - バッチ処理の最適化
 
 ## 参考情報
-1. ECカテゴリID: "RZFU2VEHUVDIZKMR4OUVBLMW"
-2. EC子カテゴリ数: 3（EC_餃子、EC_デザート、EC_グッズ）
-3. 現在のデータ構造は`components/product-list.tsx`のデバッグ表示で確認可能
+1. 現在の在庫確認API
+   ```typescript
+   // app/api/square/inventory/route.ts
+   export async function POST(request: Request) {
+     const { catalogItemVariationIds } = await request.json();
+     // ... 在庫数取得ロジック
+   }
+   ```
 
-## 作業の引き継ぎ事項
-1. 実装の優先順位
-   a. まず`lib/square/types.ts`でEC用の型定義を実装
-      ```typescript
-      // 実装すべき型定義
-      interface CategoryData {
-        id: string;
-        name: string;
-        parentId?: string | null;
-      }
-
-      interface ECCategory extends CategoryData {
-        isECCategory: boolean;
-        children?: ECCategory[];
-      }
-
-      interface ECProduct extends ProductData {
-        category: ECCategory;
-      }
-      ```
-
-   b. 次に`lib/square/client.ts`の修正
-      ```typescript
-      // 実装すべき関数例
-      function isECCategory(category: CategoryData): boolean {
-        return category.id === "RZFU2VEHUVDIZKMR4OUVBLMW" ||
-               category.parentId === "RZFU2VEHUVDIZKMR4OUVBLMW";
-      }
-
-      async function fetchECCatalog() {
-        const { result } = await squareClient.catalogApi.listCatalog();
-        // ECカテゴリとその子カテゴリのみをフィルタリング
-        // 関連する商品のみを抽出
-      }
-      ```
-
-2. データ構造の変更点
-   - カテゴリは必ずECカテゴリまたはその子カテゴリのみを扱う
-   - 商品データは必ずECカテゴリに属するもののみを返す
-   - デバッグ情報は維持しつつ、EC関連のみに限定
-
-3. 実装時の注意点
-   - Square APIの呼び出しは最小限に抑える
-   - カテゴリのフィルタリングはAPI取得時に行う
-   - 不要なカテゴリや商品データは早期に除外
-
-4. デバッグ情報の取り扱い
-   - 現在の`components/product-list.tsx`のデバッグ表示は維持
-   - EC関連のカテゴリと商品のみに表示を限定
-   - カテゴリ階層構造を視覚的に表示
-
-5. 確認済みの情報
-   - ECカテゴリID: "RZFU2VEHUVDIZKMR4OUVBLMW"
-   - EC子カテゴリ:
-     - EC_餃子: "65DGOSQZ3YRXUCIAPWA2DZH7"
-     - EC_デザート: "QYRJZCJKYYEHSJKN5PKG74RB"
-     - EC_グッズ: "E2VNV4T6M2BQ6T2WHLHUUE2Y"
-
-6. 次のAIへの引き継ぎ事項
-   - 型定義から着手することで、以降の実装がスムーズになります
-   - カテゴリフィルタリングは取得時に行うことで、パフォーマンスを最適化できます
-   - デバッグ情報は開発環境でのみ表示され、本番環境では非表示となります
-   - 現在のデータ構造は`SDK取得情報サンプル.md`で確認できます
+2. カートのコンテキスト
+   ```typescript
+   // components/cart/cart-provider.tsx
+   export function CartProvider({ children }: { children: React.ReactNode }) {
+     // ... カート状態管理
+   }
+   ```
 
 ## 完了条件
-1. EC関連のカテゴリと商品のみが表示されること
-2. カテゴリ階層構造が適切に表現されていること
-3. 型安全性が保たれていること
-4. パフォーマンスが最適化されていること
-5. デバッグ情報が適切に表示されること
+1. 決済ボタンクリック時に在庫確認が実行されること
+2. 在庫不足時に適切なアラートが表示されること
+3. ユーザーが手動で数量を調整できること
+4. 在庫確認中のローディング表示があること
+5. エラーハンドリングが適切に実装されていること
+
+## 次のAIへの引き継ぎ事項
+1. 実装の優先順位
+   a. まず在庫確認ロジックの実装
+   b. 次にアラート表示の実装
+   c. 最後にユーザー体験の改善
+
+2. 注意点
+   - 在庫数の自動調整は行わない
+   - ユーザーの手動調整を促す
+   - 決済処理は在庫確認が成功するまで開始しない
+
+3. 必要なファイル
+   - `components/cart/cart-provider.tsx`
+   - `components/cart/cart-items.tsx`
+   - `app/api/square/inventory/route.ts`
+   - `lib/square/client.ts`
