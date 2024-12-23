@@ -4,7 +4,7 @@
  */
 
 import { CatalogObject } from 'square';
-import { ProductGroup } from '../square/types';
+import { ProductGroup } from '../../square/types';
 
 const createCatalogItem = (
   id: string,
