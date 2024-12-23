@@ -7,6 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import Image from "next/image"
 import type { CartItem, ECCategory, ECProduct, CategoryTree, ECProductVariation } from '@/lib/square/types'
 import { useCart } from '@/components/cart/cart-provider'
+import { DEFAULT_MAX_ORDER_QUANTITY } from '@/lib/constants/order'
 
 // 金額を表示用の文字列に変換（日本円表示用）
 const formatPrice = (amount: number | bigint | null | undefined): string => {
@@ -415,13 +416,13 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
   // 選択可能な最大数量を取得
   const getMaxQuantity = useCallback((): number => {
     const currentVariation = hasMultipleVariations ? selectedVariation : defaultVariation;
-    if (!currentVariation) return 10;
+    if (!currentVariation) return DEFAULT_MAX_ORDER_QUANTITY;
 
     if (currentVariation.trackInventory) {
       const inventoryCount = currentVariation.inventoryCount || 0;
-      return Math.min(10, inventoryCount);
+      return Math.min(DEFAULT_MAX_ORDER_QUANTITY, inventoryCount);
     }
-    return 10;
+    return DEFAULT_MAX_ORDER_QUANTITY;
   }, [selectedVariation, hasMultipleVariations, defaultVariation]);
 
   const isValidQuantity = quantity > 0 && quantity <= getMaxQuantity();
@@ -611,8 +612,8 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
               hasVariations: hasMultipleVariations,
               requiresInventory: currentVariation?.trackInventory || product.trackInventory,
               maxStock: currentVariation?.trackInventory
-                ? Math.min(10, currentVariation.inventoryCount || 0)
-                : 10,
+                ? Math.min(DEFAULT_MAX_ORDER_QUANTITY, currentVariation.inventoryCount || 0)
+                : DEFAULT_MAX_ORDER_QUANTITY,
             });
           }}
           className="w-full"

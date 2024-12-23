@@ -1,5 +1,6 @@
 import { create, StateCreator } from 'zustand';
 import { persist, PersistOptions } from 'zustand/middleware';
+import { DEFAULT_MAX_ORDER_QUANTITY } from '@/lib/constants/order';
 
 // カートに保存される商品情報の型定義
 export type CartItem = {
@@ -31,7 +32,7 @@ const migrateCartItem = (item: Partial<CartItem>): CartItem => {
     quantity: item.quantity || 0,
     hasVariations: item.hasVariations !== undefined ? item.hasVariations : hasNameWithVariation,
     requiresInventory: item.requiresInventory || false,
-    maxStock: item.maxStock || 10,
+    maxStock: item.maxStock || DEFAULT_MAX_ORDER_QUANTITY,
   };
 };
 
@@ -73,7 +74,7 @@ export const useCartStore = create<CartState>()(
                   ? {
                       ...i,
                       quantity: i.quantity + item.quantity,
-                      // 新しいデ���タで更新
+                      // 新しいデータで更新
                       hasVariations: item.hasVariations,
                       requiresInventory: item.requiresInventory,
                       maxStock: item.maxStock,
