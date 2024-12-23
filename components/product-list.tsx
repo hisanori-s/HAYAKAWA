@@ -392,33 +392,37 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
+
+  // 実際のバリエーションの有無を判定
+  const hasMultipleVariations = product.variations.length > 1;
+  const defaultVariation = product.variations[0];
   const [selectedVariation, setSelectedVariation] = useState<DisplayProductVariation | null>(
-    product.variations && product.variations.length === 1 ? product.variations[0] : null
+    hasMultipleVariations ? null : defaultVariation
   );
 
   // バリエーションが選択されているかと数量が有効かをチェック
-  const hasVariations = product.variations && product.variations.length > 1;
-  const isValidSelection = !hasVariations || selectedVariation !== null;
+  const isValidSelection = !hasMultipleVariations || selectedVariation !== null;
   const isSoldOut = product.trackInventory && product.isSoldOut;
+
+  // 商品名を生成する関数
+  const getDisplayName = (baseName: string, variation: DisplayProductVariation | null, hasMultipleVariations: boolean): string => {
+    if (!hasMultipleVariations || !variation) {
+      return baseName;
+    }
+    return `${baseName} - ${variation.name}`;
+  };
 
   // 選択可能な最大数量を取得
   const getMaxQuantity = useCallback((): number => {
-    if (!selectedVariation) return 10;
+    const currentVariation = hasMultipleVariations ? selectedVariation : defaultVariation;
+    if (!currentVariation) return 10;
 
-    // 在庫数を取得
-    const inventoryCount = selectedVariation.inventoryCount || 0;
-
-    // 在庫管理している場合
-    if (selectedVariation.trackInventory) {
-      // 在庫が0以下の場合は0を返す
-      if (inventoryCount <= 0) return 0;
-      // 在庫が1以上10未満の場合は在庫数を返す
-      if (inventoryCount < 10) return inventoryCount;
+    if (currentVariation.trackInventory) {
+      const inventoryCount = currentVariation.inventoryCount || 0;
+      return Math.min(10, inventoryCount);
     }
-
-    // それ以外の場合は10を返す
     return 10;
-  }, [selectedVariation]);
+  }, [selectedVariation, hasMultipleVariations, defaultVariation]);
 
   const isValidQuantity = quantity > 0 && quantity <= getMaxQuantity();
   const canAddToCart = isValidSelection && isValidQuantity && !isSoldOut;
@@ -533,7 +537,7 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
         <p className="text-sm text-gray-500">{product.description}</p>
       )}
 
-      {hasVariations && (
+      {hasMultipleVariations && (
         <div className="space-y-2">
           <label htmlFor="variation" className="text-sm font-medium">
             バリエーション
@@ -596,17 +600,21 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
         </div>
 
         <Button
-          onClick={() => onAddToCart({
-            id: selectedVariation?.id || product.id,
-            name: `${product.name}${selectedVariation ? ` - ${selectedVariation.name}` : ''}`,
-            price: selectedVariation?.price || product.price,
-            quantity,
-            hasVariations: hasVariations,
-            requiresInventory: selectedVariation?.trackInventory || product.trackInventory,
-            maxStock: selectedVariation
-              ? (selectedVariation.trackInventory ? (selectedVariation.inventoryCount || 0) : 999)
-              : (product.trackInventory ? getMaxQuantity() : 999),
-          })}
+          onClick={() => {
+            const currentVariation = hasMultipleVariations ? selectedVariation : defaultVariation;
+            const displayName = getDisplayName(product.name, currentVariation, hasMultipleVariations);
+            onAddToCart({
+              id: currentVariation?.id || product.id,
+              name: displayName,
+              price: currentVariation?.price || product.price,
+              quantity,
+              hasVariations: hasMultipleVariations,
+              requiresInventory: currentVariation?.trackInventory || product.trackInventory,
+              maxStock: currentVariation?.trackInventory
+                ? Math.min(10, currentVariation.inventoryCount || 0)
+                : 10,
+            });
+          }}
           className="w-full"
           disabled={!canAddToCart}
         >
