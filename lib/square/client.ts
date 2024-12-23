@@ -1,5 +1,5 @@
 import { Client, Environment, CatalogObject } from 'square';
-import { ECCategory, ECProduct, CategoryTree } from './types';
+import { ECCategory, ECProduct, CategoryTree, ECProductVariation } from './types';
 
 // 環境変数の存在チェック
 if (!process.env.SQUARE_ACCESS_TOKEN) {
@@ -26,17 +26,22 @@ export const squareClient = new Client({
 // 環境変数の値をエクスポート
 export const SQUARE_LOCATION_ID = process.env.SQUARE_LOCATION_ID;
 
-// EC関連のカテゴリかどうかを判定する関数
-const EC_CATEGORY_ID = "RZFU2VEHUVDIZKMR4OUVBLMW";
+// EC関連のカテゴリ名
+const EC_CATEGORY_NAME = "EC";
 
-function isECCategory(category: { id: string; parentId?: string | null }): boolean {
-  return category.id === EC_CATEGORY_ID || category.parentId === EC_CATEGORY_ID;
+function isECCategory(categories: { [key: string]: { id: string; name: string; parentId?: string | null } },
+                     category: { id: string; name: string; parentId?: string | null }): boolean {
+  if (category.name === EC_CATEGORY_NAME) return true;
+  if (!category.parentId) return false;
+  const parentCategory = categories[category.parentId];
+  return parentCategory ? parentCategory.name === EC_CATEGORY_NAME : false;
 }
 
-// カテゴリツリーを構築する関数
+// カテゴリツリーを構築る関数
 function buildCategoryTree(categories: { [key: string]: { id: string; name: string; parentId?: string | null } }): CategoryTree {
-  const root = categories[EC_CATEGORY_ID];
-  if (!root) {
+  // ECルートカテゴリを探す
+  const rootCategory = Object.values(categories).find(cat => cat.name === EC_CATEGORY_NAME);
+  if (!rootCategory) {
     throw new Error('EC root category not found');
   }
 
@@ -44,7 +49,7 @@ function buildCategoryTree(categories: { [key: string]: { id: string; name: stri
 
   // まずすべてのカテゴリをECCategory形式に変換
   Object.values(categories).forEach(category => {
-    if (isECCategory(category)) {
+    if (isECCategory(categories, category)) {
       ecCategories[category.id] = {
         ...category,
         isECCategory: true,
@@ -62,7 +67,7 @@ function buildCategoryTree(categories: { [key: string]: { id: string; name: stri
   });
 
   return {
-    root: ecCategories[EC_CATEGORY_ID],
+    root: ecCategories[rootCategory.id],
     allCategories: ecCategories
   };
 }
@@ -71,7 +76,7 @@ function buildCategoryTree(categories: { [key: string]: { id: string; name: stri
 function processCatalogData(catalogData: { objects?: CatalogObject[] }) {
   const categories: { [key: string]: { id: string; name: string; parentId?: string | null } } = {};
 
-  // カテゴリー情報の抽出
+  // テゴリー情報の抽出
   catalogData.objects
     ?.filter((obj: CatalogObject) => obj.type === 'CATEGORY')
     .forEach((category: CatalogObject) => {
@@ -108,18 +113,37 @@ function processCatalogData(catalogData: { objects?: CatalogObject[] }) {
 
   // 有効な商品をECProduct形式に変換
   validProducts.forEach((item) => {
-    // ECカテゴリに属するカテゴリを探す
+    // ECカテゴリに属する��テゴリを探す
     const ecCategory = item.itemData.categories.find(category =>
       category?.id && category.id in categoryTree.allCategories
     );
     if (!ecCategory?.id) return; // 念のためのチェック
+
+    // バリエーションの処理
+    const variations: ECProductVariation[] = [];
+    if (item.itemData.variations) {
+      item.itemData.variations.forEach(variation => {
+        if (variation.itemVariationData) {
+          variations.push({
+            id: variation.id,
+            name: variation.itemVariationData.name || '',
+            sku: variation.itemVariationData.sku || null,
+            price: Number(variation.itemVariationData.priceMoney?.amount || 0),
+            ordinal: variation.itemVariationData.ordinal || 0,
+            trackInventory: variation.itemVariationData.trackInventory || false,
+            soldOut: variation.itemVariationData.sellable === false
+          });
+        }
+      });
+    }
 
     const product: ECProduct = {
       ...item,
       type: 'ITEM',
       itemData: item.itemData,
       category: categoryTree.allCategories[ecCategory.id],
-      imageUrl: undefined
+      imageUrl: undefined,
+      variations
     };
     ecProducts.push(product);
   });
