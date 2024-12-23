@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { CartItems } from '@/components/cart/cart-items';
 import { useSearchParams } from 'next/navigation';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function CartPage() {
   const { items } = useCartStore();
@@ -51,7 +52,7 @@ export default function CartPage() {
       console.error('Checkout error:', error);
       toast({
         title: 'エラー',
-        description: 'チェックアウトに失敗しました。もう一度お試しください。',
+        description: 'チェックアウトに失敗しました。もう��度お試しください。',
         variant: 'destructive',
       });
     } finally {
@@ -75,6 +76,35 @@ export default function CartPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* デバッグ情報 */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mb-8">
+          <Accordion type="single" collapsible>
+            <AccordionItem value="debug-info">
+              <AccordionTrigger className="bg-gray-100 p-4 rounded-t">
+                <h3 className="font-bold">カートデバッグ情報</h3>
+              </AccordionTrigger>
+              <AccordionContent className="bg-gray-100 p-4 rounded-b">
+                <div>
+                  <h4 className="font-semibold mb-2">カート内容:</h4>
+                  <pre className="text-xs overflow-auto bg-white p-2 rounded">
+                    {JSON.stringify(items.map(item => ({
+                      id: item.id,
+                      name: item.name,
+                      price: item.price,
+                      quantity: item.quantity,
+                      hasVariations: item.hasVariations,
+                      requiresInventory: item.requiresInventory,
+                      maxStock: item.maxStock,
+                    })), null, 2)}
+                  </pre>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">カート</h1>
         <Link href="/">

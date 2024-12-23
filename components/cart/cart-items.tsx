@@ -38,7 +38,12 @@ export function CartItems() {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+              onClick={() => {
+                const newQuantity = Math.max(1, item.quantity - 1);
+                if (newQuantity <= item.maxStock) {
+                  updateQuantity(item.id, newQuantity);
+                }
+              }}
             >
               <Minus className="h-4 w-4" />
             </Button>
@@ -47,17 +52,23 @@ export function CartItems() {
               value={item.quantity}
               onChange={(e) => {
                 const value = parseInt(e.target.value);
-                if (!isNaN(value) && value > 0) {
+                if (!isNaN(value) && value > 0 && value <= item.maxStock) {
                   updateQuantity(item.id, value);
                 }
               }}
               className="w-20 text-center"
               min="1"
+              max={item.maxStock}
             />
             <Button
               variant="outline"
               size="icon"
-              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+              onClick={() => {
+                const newQuantity = item.quantity + 1;
+                if (newQuantity <= item.maxStock) {
+                  updateQuantity(item.id, newQuantity);
+                }
+              }}
             >
               <Plus className="h-4 w-4" />
             </Button>

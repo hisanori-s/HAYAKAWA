@@ -21,6 +21,20 @@ interface CartState {
   clearCart: () => void;                          // カートを空にする
 }
 
+// 古いデータを新しい形式に変換する関数
+const migrateCartItem = (item: Partial<CartItem>): CartItem => {
+  const hasNameWithVariation = typeof item.name === 'string' && item.name.includes(' - ') && item.name.split(' - ')[1] !== '';
+  return {
+    id: item.id || '',
+    name: item.name || '',
+    price: item.price || 0,
+    quantity: item.quantity || 0,
+    hasVariations: item.hasVariations !== undefined ? item.hasVariations : hasNameWithVariation,
+    requiresInventory: item.requiresInventory || false,
+    maxStock: item.maxStock || 10,
+  };
+};
+
 type CartPersist = (
   config: StateCreator<CartState>,
   options: PersistOptions<CartState>
@@ -59,7 +73,10 @@ export const useCartStore = create<CartState>()(
                   ? {
                       ...i,
                       quantity: i.quantity + item.quantity,
-                      // 在庫管理が必要な場合は、maxStockを超えないように注意
+                      // 新しいデ���タで更新
+                      hasVariations: item.hasVariations,
+                      requiresInventory: item.requiresInventory,
+                      maxStock: item.maxStock,
                     }
                   : i
               ),
@@ -85,6 +102,12 @@ export const useCartStore = create<CartState>()(
     {
       name: 'cart-storage',
       storage,
+      // LocalStorageから読み込んだデータを変換
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.items = state.items.map(migrateCartItem);
+        }
+      },
     }
   )
 );
