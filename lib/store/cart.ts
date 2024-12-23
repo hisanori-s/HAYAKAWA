@@ -4,7 +4,7 @@ import { DEFAULT_MAX_ORDER_QUANTITY } from '@/lib/constants/order';
 
 // カートに保存される商品情報の型定義
 export type CartItem = {
-  id: string;                  // 商品ID
+  id: string;                  // バリエーションID
   name: string;               // 商品名
   price: number;              // 価格
   quantity: number;           // 数量

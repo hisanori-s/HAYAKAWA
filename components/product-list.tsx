@@ -605,7 +605,7 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
             const currentVariation = hasMultipleVariations ? selectedVariation : defaultVariation;
             const displayName = getDisplayName(product.name, currentVariation, hasMultipleVariations);
             onAddToCart({
-              id: currentVariation?.id || product.id,
+              id: currentVariation?.id || '',
               name: displayName,
               price: currentVariation?.price || product.price,
               quantity,
