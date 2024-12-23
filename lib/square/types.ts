@@ -26,20 +26,30 @@ export type ProductGroup = {
 
 // Square APIの拡張型定義
 export interface ExtendedCheckoutOptions {
-  redirectUrl?: string;
-  askForShippingAddress?: boolean;
-  requireBillingAddress?: boolean;
-  merchantSupportEmail?: string;
-  enableCoupon?: boolean;
-  enableLoyalty?: boolean;
-  locale?: string;
-  country?: string;
-  currency?: string;
+  redirectUrl?: string | null;
+  askForShippingAddress?: boolean | null;
+  requireBillingAddress?: boolean | null;
+  merchantSupportEmail?: string | null;
+  enableCoupon?: boolean | null;
+  enableLoyalty?: boolean | null;
+  locale?: string | null;
+  country?: string | null;
+  currency?: string | null;
 }
 
 // 型定義のマージ
 declare module 'square' {
-  interface CheckoutOptions extends ExtendedCheckoutOptions {}
+  interface CheckoutOptions {
+    redirectUrl?: string | null;
+    askForShippingAddress?: boolean | null;
+    requireBillingAddress?: boolean | null;
+    merchantSupportEmail?: string | null;
+    enableCoupon?: boolean | null;
+    enableLoyalty?: boolean | null;
+    locale?: string | null;
+    country?: string | null;
+    currency?: string | null;
+  }
 }
 
 // EC用の基本カテゴリ型

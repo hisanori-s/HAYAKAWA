@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { squareClient } from '@/lib/square/client';
-import { InventoryCount } from 'square';
 
 export async function POST(request: Request) {
   try {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -383,7 +383,7 @@ interface ProductModalProps {
 
 /**
  * 商品詳細モーダルコンポーネント
- * 商品の詳情報、画像、バリエーション選択、数量選択を表示する
+ * 商品の詳細情報、画像、バリエーション選択、数量選択を表示する
  * @param product 表示する商品情報
  * @param onAddToCart カートに商品を追加する関数
  */
@@ -399,12 +399,10 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
   // バリエーションが選択されているかと数量が有効かをチェック
   const hasVariations = product.variations && product.variations.length > 1;
   const isValidSelection = !hasVariations || selectedVariation !== null;
-  const isValidQuantity = quantity > 0 && quantity <= getMaxQuantity();
   const isSoldOut = product.trackInventory && product.isSoldOut;
-  const canAddToCart = isValidSelection && isValidQuantity && !isSoldOut;
 
   // 選択可能な最大数量を取得
-  function getMaxQuantity(): number {
+  const getMaxQuantity = useCallback((): number => {
     if (!selectedVariation) return 10;
 
     // 在庫数を取得
@@ -420,7 +418,10 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
 
     // それ以外の場合は10を返す
     return 10;
-  }
+  }, [selectedVariation]);
+
+  const isValidQuantity = quantity > 0 && quantity <= getMaxQuantity();
+  const canAddToCart = isValidSelection && isValidQuantity && !isSoldOut;
 
   useEffect(() => {
     // 選択されたバリエーションが変更された時に、
@@ -429,7 +430,7 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
     if (quantity > maxQty) {
       setQuantity(maxQty);
     }
-  }, [selectedVariation]);
+  }, [getMaxQuantity, quantity]);
 
   useEffect(() => {
     if (!api) {
