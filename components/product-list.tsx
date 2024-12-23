@@ -601,6 +601,11 @@ function ProductModal({ product, onAddToCart }: ProductModalProps) {
             name: `${product.name}${selectedVariation ? ` - ${selectedVariation.name}` : ''}`,
             price: selectedVariation?.price || product.price,
             quantity,
+            hasVariations: hasVariations,
+            requiresInventory: selectedVariation?.trackInventory || product.trackInventory,
+            maxStock: selectedVariation
+              ? (selectedVariation.trackInventory ? (selectedVariation.inventoryCount || 0) : 999)
+              : (product.trackInventory ? getMaxQuantity() : 999),
           })}
           className="w-full"
           disabled={!canAddToCart}

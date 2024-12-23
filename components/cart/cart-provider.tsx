@@ -5,7 +5,15 @@ import { useCartStore } from '@/lib/store/cart';
 import { useToast } from '@/components/ui/use-toast';
 
 interface CartContextType {
-  handleAddToCart: (item: { id: string; name: string; price: number; quantity: number }) => void;
+  handleAddToCart: (item: {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+    hasVariations: boolean;
+    requiresInventory: boolean;
+    maxStock: number;
+  }) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -20,7 +28,15 @@ export function CartProvider({ children }: CartProviderProps) {
 
   // カートに商品を追加する際のハンドラー
   const handleAddToCart = (item: Parameters<typeof addToCart>[0]) => {
-    addToCart(item);
+    addToCart({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      hasVariations: item.hasVariations,
+      requiresInventory: item.requiresInventory,
+      maxStock: item.maxStock,
+    });
     toast({
       title: 'カートに追加しました',
       description: `${item.name} × ${item.quantity}`,

@@ -17,6 +17,9 @@ export type CartItem = {
   name: string;
   price: number; // 円単位（Square APIの返す銭単位から変換済み）
   quantity: number;
+  hasVariations: boolean;     // バリエーション（色・サイズなど）の有無
+  requiresInventory: boolean; // 在庫管理が必要な商品かどうか
+  maxStock: number;          // 在庫の最大数
 };
 
 export type ProductGroup = {
