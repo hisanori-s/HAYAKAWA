@@ -136,19 +136,24 @@ project-root:
         "inventory/route.ts":
           content: "Square Inventory APIを使用して在庫情報を取得するエンドポイント"
           exports:
-            - "GET /api/square/inventory: 指定された商品IDの在庫情報を取得"
+            - "POST /api/square/inventory: 指定された商品IDの在庫情報を取得"
           dependencies:
             - "@/lib/square/client"
 
     cart:
       "page.tsx":
-        content: "カートページのメインコンポーネント"
+        content: |-
+          カートページのメインコンポーネント
+          - 在庫確認機能の実装
+          - 在庫状態に基づく購入制限
+          - 在庫確認中の表示制御
         exports:
           - "CartPage | カート内商品の表示と在庫確認機能を提供"
         dependencies:
           - "@/components/cart/cart-items"
           - "@/lib/store/cart"
           - "@/lib/square/client"
+          - "@/lib/constants/order"
       "check/page.tsx":
         dependencies:
           - "@/components/payment/square-payment"
@@ -215,7 +220,7 @@ project-root:
         exports:
           - "DEFAULT_MAX_ORDER_QUANTITY | デフォルトの最大注文数"
           - "ORDER_SETTINGS | 注文設定オブジェクト"
-      "mockData/demo-products.ts":
+      "demo-products.ts":
         exports:
           - "DEMO_PRODUCTS"
 
@@ -233,10 +238,15 @@ project-root:
 
     store:
       "cart.ts":
-        content: "カートの状態管理ストア"
+        content: |-
+          カートの状態管理ストア
+          - 在庫確認機能の統合
+          - 在庫状態に基づく購入制限
+          - 状態更新の最適化
         exports:
           - "CartItem | カート内商品の型定義"
           - "useCartStore | カート操作用Zustandストア"
+          - "InventoryState | 在庫状態の型定義"
         dependencies:
           - "@/lib/constants/order"
 

@@ -1,234 +1,146 @@
-# Square ECサイト開発 - カート商品の在庫確認機能
+# カート在庫確認機能の修正 - 状態管理の最適化
 
-## 現在の状況
-1. 在庫管理機能の実装が完了
-   - Square Inventory APIによる在庫数取得
-   - 商品詳細での在庫数表示
-   - 在庫数に基づく購入数制限
-   - 商品ごとの在庫管理要否フラグの実装
+## 現在の問題
+1. 在庫確認の無限ループ
+   - 決済へ進むボタンが「在庫確認中」の状態から抜け出せない
+   - `isValidatingInventory`の状態管理が適切に行われていない
+   - 在庫確認のトリガーが重複している可能性
 
-2. カート機能の現状
-   - LocalStorageによる永続化
-   - 商品の追加・削除
-   - 数量変更機能
-   - 決済処理連携
+2. 状態管理の課題
+   - 複数の`useEffect`による副作用の連鎖
+   - 在庫確認の依存関係が複雑化
+   - 状態更新のタイミングが不明確
 
-## セキュリティ要件
+## 解決の方針
+1. 状態管理の単純化
+   - 在庫確認のトリガーを明確に定義
+   - 状態更新のタイミングを整理
+   - 不要な依存関係の削除
 
-### 環境変数の取り扱い
-- Square APIのアクセストークン（`SQUARE_ACCESS_TOKEN`）は必ずサーバーサイドでのみ使用すること
-- 機密情報（APIキー、トークン）は絶対にクライアントサイドで使用しないこと
+2. 在庫確認フローの再設計
+   ```mermaid
+   graph TD
+     A[ページロード] --> B{在庫管理商品あり?}
+     B -- Yes --> C[初回在庫確認]
+     B -- No --> D[確認不要]
+     C --> E[状態更新]
+     E --> F{数量変更?}
+     F -- Yes --> G[在庫再確認]
+     F -- No --> H[完了]
+   ```
 
-### API通信の制約
-- 在庫確認は必ずサーバーサイドのAPIエンドポイントを経由して行うこと
-- Square APIへの直接的なアクセスは全てサーバーサイドで行い、クライアントサイドからは内部APIを経由すること
-- クライアントサイドでは、内部APIエンドポイント（`/api/square/*`）のみを使用すること
+3. 実装の優先順位
+   a. 在庫確認ロジックの単純化
+   b. 状態管理の整理
+   c. エラーハンドリングの改善
 
-### 実装方針
-- 環境変数のチェックは`lib/square/client.ts`内の`getSquareClient()`関数でのみ行うこと
-- クライアントコンポーネントでは、環境変数を直接参照せず、APIエンドポイントを介して必要な情報を取得すること
+## 現在のコードベース
+1. `app/cart/page.tsx`
+   - 在庫確認ロジックが複雑化
+   - 複数の`useEffect`が相互に影響
+   - 状態管理が分散
 
-## 実装すべき機能
-1. カート内商品の在庫確認機能
-   - 在庫管理フラグ（`requiresInventory`）に基づく確認要否の判定
-   - 決済ボタンクリック時に在庫確認
-   - 在庫不足時のアラート表示
-   - ユーザーによる数量調整の促進
+2. 主要な状態
+   ```typescript
+   const [isValidatingInventory, setIsValidatingInventory] = useState(false);
+   const [needsInventoryCheck, setNeedsInventoryCheck] = useState(false);
+   const [inventoryError, setInventoryError] = useState<string | null>(null);
+   const [inventoryItems, setInventoryItems] = useState<Array<...>>([]);
+   ```
 
-2. 確認すべき条件
-   - 在庫管理フラグ（`requiresInventory`）= false：チェック不要
-   - 在庫管理フラグ（`requiresInventory`）= true の場合：
-     - 在庫数 < 注文数：在庫不足
-     - 在庫数 = 0：在庫切れ
+## 修正方針
+1. 状態管理の集約
+   - 在庫確認に関する状態を一つのオブジェクトに統合
+   - 状態更新を単一の関数で管理
+   ```typescript
+   interface InventoryState {
+     isValidating: boolean;
+     needsCheck: boolean;
+     error: string | null;
+     items: Array<...>;
+   }
+   ```
 
-## 在庫チェックの動作フロー
-1. ページの表示
-2. 在庫チェックが必要な商品の有無を確認
-3. チェックが必要な場合のみ在庫照会を実行
-4. 不足がある場合はアラートエリアに表示
-5. 在庫不足が解決するまで注文手続きボタンを無効化
+2. 在庫確認ロジックの単純化
+   - 初回ロード時の確認を1回だけ実行
+   - 数量変更時の確認を最適化
+   - 不要な再確認を防止
+
+3. エラーハンドリングの改善
+   - エラー状態の明確な管理
+   - ユーザーへの適切なフィードバック
+   - リカバリー手順の提供
 
 ## 実装手順
-1. カートアイテムの型定義
-   ```typescript
-   interface CartItem {
-     id: string;           // Square カタログアイテムID
-     name: string;         // 商品名
-     price: number;        // 価格
-     quantity: number;     // 数量
-     hasVariations: boolean; // バリエーションの有無
-     requiresInventory: boolean; // 在庫管理の要否
-     maxStock: number;     // 最大在庫数
-   }
-   ```
+1. 状態管理の再構築
+   - 統合された状態オブジェクトの実装
+   - 状態更新関数の作成
+   - 依存関係の整理
 
-2. 在庫確認ロジックの実装
-   ```typescript
-   // 実装すべき関数例
-   async function validateCartInventory(cartItems: CartItem[]): Promise<{
-     isValid: boolean;
-     invalidItems: Array<{
-       item: CartItem;
-       availableQuantity: number;
-     }>;
-   }> {
-     // 在庫管理が必要な商品のみを抽出
-     const itemsRequiringInventory = cartItems.filter(item => item.requiresInventory);
+2. 在庫確認ロジックの修正
+   - 初回ロードの処理を単純化
+   - 数量変更時の処理を最適化
+   - 確認トリガーの明確化
 
-     // 在庫管理が必要な商品がない場合は早期リターン
-     if (itemsRequiringInventory.length === 0) {
-       return {
-         isValid: true,
-         invalidItems: []
-       };
-     }
+3. UI/UXの改善
+   - ローディング状態の表示を改善
+   - エラーメッセージの表示を最適化
+   - ユーザーアクションの制御を改善
 
-     // Square Inventory APIで在庫数を取得
-     const inventoryResponse = await fetch('/api/square/inventory', {
-       method: 'POST',
-       headers: {
-         'Content-Type': 'application/json',
-       },
-       body: JSON.stringify({
-         catalogItemVariationIds: itemsRequiringInventory.map(item => item.id)
-       })
-     });
+## 注意点
+1. 状態管理
+   - 状態更新は必ず単一の関数を通して行う
+   - 副作用の連鎖を防ぐ
+   - デバッグ情報を活用して状態変化を追跡
 
-     const inventory = await inventoryResponse.json();
-
-     // 在庫不足アイテムの抽出
-     const invalidItems = itemsRequiringInventory.filter(item => {
-       const stock = inventory[item.id] ?? 0;
-       return stock < item.quantity;
-     }).map(item => ({
-       item,
-       availableQuantity: inventory[item.id] ?? 0
-     }));
-
-     return {
-       isValid: invalidItems.length === 0,
-       invalidItems
-     };
-   }
-   ```
-
-3. アラート表示の実装
-   ```typescript
-   // アラートメッセージの例
-   function getInventoryAlertMessage(invalidItems: Array<{
-     item: CartItem;
-     availableQuantity: number;
-   }>): string {
-     return `以下の商品の在庫が不足しています：\n
-     ${invalidItems.map(({ item, availableQuantity }) =>
-       `・${item.name}: 在庫数 ${availableQuantity}個（注文数 ${item.quantity}個）`
-     ).join('\n')}
-     \n数量を調整してください。`;
-   }
-   ```
-
-## UI仕様
-- カート内の基本的なUIは既存を維持
-- アラートメッセージは商品リストの上部（カートの文字の下）に表示
-- 在庫不足時は注文手続きボタンを無効化
-
-## 技術的な注意点
-1. 在庫確認のタイミング
-   - 決済ボタンクリック時に実行
-   - 確認中はローディング表示
-   - エラー時は決済処理に進まない
-
-2. ユーザー体験の考慮
-   - 明確なエラーメッセージ
-   - 在庫数の表示
-   - 数量調整への誘導
+2. パフォーマンス
+   - 不要な再レンダリングを防ぐ
+   - メモ化を適切に使用
+   - 非同期処理の最適化
 
 3. エラーハンドリング
-   - API通信エラーの処理
-   - タイムアウト処理
-   - リトライロジック
+   - エラー状態を明確に管理
+   - ユーザーへの適切なフィードバック
+   - リカバリー手順の提供
 
-## 修正が必要なファイル
-1. `components/cart/cart-provider.tsx`
-   - 在庫確認ロジックの追加
-   - 決済前の確認処理
+## 必要なファイル
+1. `app/cart/page.tsx`
+   - 在庫確認ロジックの修正
+   - 状態管理の改善
+   - UIの最適化
 
-2. `components/cart/cart-items.tsx`
-   - エラーメッセージ表示
-   - 在庫状態の表示
-   - アラートエリアの追加
-
-3. `lib/square/client.ts`
-   - 在庫確認用の関数追加
-   - バッチ処理の最適化
-   - 環境変数チェックの実装
-
-## 参考情報
-1. 現在の在庫確認API
-   ```typescript
-   // app/api/square/inventory/route.ts
-   export async function POST(request: Request) {
-     const { catalogItemVariationIds } = await request.json();
-
-     // 在庫管理が必要なIDのみを処理
-     const inventoryResponse = await squareClient.inventoryApi.batchRetrieveInventoryCounts({
-       catalogObjectIds: catalogItemVariationIds
-     });
-
-     // IDごとの在庫数をマッピング
-     const inventoryMap = inventoryResponse.counts.reduce((acc, count) => {
-       acc[count.catalogObjectId] = parseInt(count.quantity);
-       return acc;
-     }, {});
-
-     return Response.json(inventoryMap);
-   }
-   ```
-
-2. カートのコンテキスト
-   ```typescript
-   // components/cart/cart-provider.tsx
-   export function CartProvider({ children }: { children: React.ReactNode }) {
-     const [cartItems, setCartItems] = useState<CartItem[]>([]);
-     const [inventoryStatus, setInventoryStatus] = useState<{
-       isChecking: boolean;
-       invalidItems: Array<{
-         item: CartItem;
-         availableQuantity: number;
-       }>;
-     }>({
-       isChecking: false,
-       invalidItems: []
-     });
-
-     // ... カート状態管理
-   }
-   ```
+2. `lib/store/cart.ts`
+   - カート状態の型定義
+   - 在庫確認関連の型定義
 
 ## 完了条件
-1. 在庫管理フラグに基づいて適切に在庫確認が実行されること
-2. 決済ボタンクリック時に在庫確認が実行されること
-3. 在庫不足時に適切なアラートが表示されること
-4. ユーザーが手動で数量を調整できること
-5. 在庫確認中のローディング表示があること
-6. エラーハンドリングが適切に実装されていること
-7. セキュリティ要件が満たされていること
+1. 在庫確認の無限ループが解消されていること
+2. 決済ボタンの状態が適切に更新されること
+3. エラー状態が適切に管理されていること
+4. ユーザー体験が改善されていること
 
-## 次のAIへの引き継ぎ事項
-1. 実装の優先順位
-   a. まず在庫確認ロジックの実装
-   b. 次にアラート表示の実装
-   c. 最後にユーザー体験の改善
+## デバッグ方法
+1. 状態変化のログ出力
+2. デバッグパネルでの状態確認
+3. エラー発生時の詳細情報収集
 
-2. 注意点
-   - 在庫管理フラグに基づく処理の分岐を確実に行う
-   - 在庫数の自動調整は行わない
-   - ユーザーの手動調整を促す
-   - 決済処理は在庫確認が成功するまで開始しない
-   - セキュリティ要件の厳守
+## セキュリティ要件
+1. APIトークンの適切な管理
+2. 在庫データの整合性確保
+3. ユーザー入力の検証
 
-3. 必要なファイル
-   - `components/cart/cart-provider.tsx`
-   - `components/cart/cart-items.tsx`
-   - `app/api/square/inventory/route.ts`
-   - `lib/square/client.ts`
+## 次のAIへの指示
+1. まず現状の問題を冷静に分析してください
+   - 状態管理の流れを図示
+   - 問題の根本原因を特定
+   - 解決の優先順位を決定
+
+2. 段階的な修正アプローチを取ってください
+   - 状態管理の単純化から着手
+   - 一つずつ変更を加えて検証
+   - 変更の影響を慎重に確認
+
+3. デバッグ情報を活用してください
+   - 状態変化のログを確認
+   - エラーの発生パターンを分析
+   - 修正の効果を検証

@@ -10,7 +10,6 @@ export type CartItem = {
   quantity: number;           // 数量
   hasVariations: boolean;     // バリエーション（色・サイズなど）の有無
   requiresInventory: boolean; // 在庫管理が必要な商品かどうか
-  maxStock: number;          // 在庫の最大数
 };
 
 // カートの状態管理インターフェース
@@ -32,7 +31,6 @@ const migrateCartItem = (item: Partial<CartItem>): CartItem => {
     quantity: item.quantity || 0,
     hasVariations: item.hasVariations !== undefined ? item.hasVariations : hasNameWithVariation,
     requiresInventory: item.requiresInventory || false,
-    maxStock: item.maxStock || DEFAULT_MAX_ORDER_QUANTITY,
   };
 };
 
@@ -77,7 +75,6 @@ export const useCartStore = create<CartState>()(
                       // 新しいデータで更新
                       hasVariations: item.hasVariations,
                       requiresInventory: item.requiresInventory,
-                      maxStock: item.maxStock,
                     }
                   : i
               ),

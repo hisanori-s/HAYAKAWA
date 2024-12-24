@@ -5,7 +5,7 @@ import { useCartStore, CartItem } from '@/lib/store/cart';
 import { useToast } from '@/components/ui/use-toast';
 
 interface CartContextType {
-  handleAddToCart: (item: CartItem) => void;
+  handleAddToCart: (item: Omit<CartItem, 'quantity'> & { quantity: number }) => void;
   isValidatingInventory: boolean;
 }
 
@@ -21,8 +21,11 @@ export function CartProvider({ children }: CartProviderProps) {
   const [isValidatingInventory, setIsValidatingInventory] = useState(false);
 
   // カートに商品を追加する際のハンドラー
-  const handleAddToCart = (item: CartItem) => {
-    addToCart(item);
+  const handleAddToCart = (item: Omit<CartItem, 'quantity'> & { quantity: number }) => {
+    addToCart({
+      ...item,
+      quantity: item.quantity
+    });
     toast({
       title: 'カートに追加しました',
       description: `${item.name} × ${item.quantity}`,
