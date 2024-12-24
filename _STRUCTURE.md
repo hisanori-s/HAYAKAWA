@@ -134,14 +134,21 @@ project-root:
           dependencies:
             - "@/lib/square/client"
         "inventory/route.ts":
+          content: "Square Inventory APIを使用して在庫情報を取得するエンドポイント"
+          exports:
+            - "GET /api/square/inventory: 指定された商品IDの在庫情報を取得"
           dependencies:
             - "@/lib/square/client"
 
     cart:
       "page.tsx":
+        content: "カートページのメインコンポーネント"
+        exports:
+          - "CartPage | カート内商品の表示と在庫確認機能を提供"
         dependencies:
           - "@/components/cart/cart-items"
           - "@/lib/store/cart"
+          - "@/lib/square/client"
       "check/page.tsx":
         dependencies:
           - "@/components/payment/square-payment"
@@ -151,11 +158,15 @@ project-root:
   components:
     cart:
       "cart-provider.tsx":
+        content: "カートの状態管理とコンテキストプロバイダー"
         exports:
-          - "useCart"
+          - "useCart | カート操作用フック"
+          - "CartProvider | カートコンテキストプロバイダー"
         dependencies:
           - "@/lib/store/cart"
+          - "@/lib/square/client"
       "cart-items.tsx":
+        content: "カート内商品一覧表示コンポーネント"
         dependencies:
           - "@/lib/store/cart"
           - "@/lib/constants/order"
@@ -187,44 +198,51 @@ project-root:
         - "@/components/product-list"
     "header.tsx": {}
     "product-list.tsx":
+      content: "商品一覧表示と在庫管理機能を含むコンポーネント"
       exports:
-        - "ProductList"
+        - "ProductList | 商品一覧と在庫状態を表示"
       dependencies:
         - "@/components/ui/dialog"
         - "@/components/ui/button"
         - "@/lib/constants/order"
         - "@/lib/square/types"
+        - "@/lib/square/client"
 
   lib:
     constants:
       "order.ts":
+        content: "注文関連の定数定義"
         exports:
-          - "DEFAULT_MAX_ORDER_QUANTITY"
-          - "ORDER_SETTINGS"
+          - "DEFAULT_MAX_ORDER_QUANTITY | デフォルトの最大注文数"
+          - "ORDER_SETTINGS | 注文設定オブジェクト"
       "mockData/demo-products.ts":
         exports:
           - "DEMO_PRODUCTS"
 
     square:
       "client.ts":
+        content: "Square APIクライアントの設定と初期化"
         exports:
-          - "squareClient"
+          - "squareClient | Square APIクライアントインスタンス"
       "types.ts":
+        content: "Square関連の型定義"
         exports:
-          - "ECProduct"
-          - "ECCategory"
-          - "ECProductVariation"
+          - "ECProduct | 商品データの型定義"
+          - "ECCategory | カテゴリーの型定義"
+          - "ECProductVariation | 商品バリエーションの型定義"
 
     store:
       "cart.ts":
+        content: "カートの状態管理ストア"
         exports:
-          - "CartItem"
-          - "useCartStore"
+          - "CartItem | カート内商品の型定義"
+          - "useCartStore | カート操作用Zustandストア"
         dependencies:
           - "@/lib/constants/order"
 
     "square-utils.ts":
+      content: "Square API関連のユーティリティ関数"
       exports:
-        - "formatPrice"
+        - "formatPrice | 価格フォーマット関数"
     "utils.ts": {}
 ```
