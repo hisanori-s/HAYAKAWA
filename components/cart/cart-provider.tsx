@@ -1,11 +1,12 @@
 'use client'
 
-import { ReactNode, createContext, useContext } from 'react';
+import { ReactNode, createContext, useContext, useState } from 'react';
 import { useCartStore, CartItem } from '@/lib/store/cart';
 import { useToast } from '@/components/ui/use-toast';
 
 interface CartContextType {
   handleAddToCart: (item: CartItem) => void;
+  isValidatingInventory: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -17,6 +18,7 @@ interface CartProviderProps {
 export function CartProvider({ children }: CartProviderProps) {
   const { toast } = useToast();
   const addToCart = useCartStore(state => state.addItem);
+  const [isValidatingInventory, setIsValidatingInventory] = useState(false);
 
   // カートに商品を追加する際のハンドラー
   const handleAddToCart = (item: CartItem) => {
@@ -28,7 +30,7 @@ export function CartProvider({ children }: CartProviderProps) {
   };
 
   return (
-    <CartContext.Provider value={{ handleAddToCart }}>
+    <CartContext.Provider value={{ handleAddToCart, isValidatingInventory }}>
       {children}
     </CartContext.Provider>
   );
