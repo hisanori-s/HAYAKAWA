@@ -1,6 +1,6 @@
 import { create, StateCreator } from 'zustand';
 import { persist, PersistOptions } from 'zustand/middleware';
-import { DEFAULT_MAX_ORDER_QUANTITY } from '@/lib/constants/order';
+import { DefaultMaxOrderQuantity } from '@/lib/constants/order';
 
 // カートに保存される商品情報の型定義
 export type CartItem = {
@@ -241,13 +241,13 @@ export const useCartStore = create<CartState>()(
           set({
             inventoryItems: inventoryItemsData,
             inventoryError: invalidItems.length > 0
-              ? `以下の商品の在庫が不足しています：\n${
+              ? `以下の商品は在庫が不足しているため、数量を調整してください：\n${
                   invalidItems
                     .map(({ item, availableQuantity }) =>
                       `${item.name}: 在庫数 ${availableQuantity}個（注文数 ${item.quantity}個）`
                     )
                     .join('\n')
-                }\n数量を調整してください。`
+                }`
               : null,
             isValidatingInventory: false,
             needsInventoryCheck: false

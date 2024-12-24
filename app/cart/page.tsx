@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { useSearchParams } from 'next/navigation';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { DEFAULT_MAX_ORDER_QUANTITY } from '@/lib/constants/order';
+import { DefaultMaxOrderQuantity } from '@/lib/constants/order';
 
 export default function CartPage() {
   const {
@@ -42,21 +42,32 @@ export default function CartPage() {
 
   // 初回ロウント時の在庫確認
   useEffect(() => {
+    // 初回ページロード時のみ在庫確認を実行（在庫数を超える注文が存在するかの確認）
     const hasItemsRequiringInventory = items.some(item => item.requiresInventory);
-    if (hasItemsRequiringInventory && !isValidatingInventory && !inventoryItems.length) {
+    const isInitialLoad = !inventoryItems.length;
+    if (hasItemsRequiringInventory && !isValidatingInventory && isInitialLoad) {
       void validateInventory();
     }
   }, [items, isValidatingInventory, inventoryItems.length, validateInventory]);
 
   // 数量変更のハンドラー
   const handleQuantityChange = useCallback((itemId: string, newQuantity: number) => {
-    updateQuantity(itemId, newQuantity);
-    // 在庫管理商品の場合は在庫を再確認
     const item = items.find(i => i.id === itemId);
-    if (item?.requiresInventory && !isValidatingInventory) {
+    if (!item) return;
+
+    const inventoryItem = inventoryItems.find(inv => inv.id === itemId);
+    const currentStock = inventoryItem?.variations[0]?.inventoryCount ?? 0;
+    const isCurrentlyOverStock = item.requiresInventory && item.quantity > currentStock;
+
+    updateQuantity(itemId, newQuantity);
+
+    // 在庫確認が必要なケース：
+    // 在庫オーバー状態の商品の数量を変更する場合のみ
+    // （在庫数以下になるまで監視）
+    if (isCurrentlyOverStock && !isValidatingInventory) {
       void validateInventory();
     }
-  }, [items, updateQuantity, validateInventory, isValidatingInventory]);
+  }, [items, updateQuantity, validateInventory, isValidatingInventory, inventoryItems]);
 
   // エラーメッセージの確認と表示
   useEffect(() => {
@@ -132,15 +143,8 @@ export default function CartPage() {
   // 商品削除のハンドラー
   const handleRemoveItem = useCallback((itemId: string) => {
     removeItem(itemId);
-    // 商品削除後に在庫確認を実行（在庫管理商品が残っている場合のみ）
-    const hasRemainingInventoryItems = items
-      .filter(item => item.id !== itemId) // 削除する商品を除外
-      .some(item => item.requiresInventory);
-
-    if (hasRemainingInventoryItems && !isValidatingInventory) {
-      void validateInventory();
-    }
-  }, [items, removeItem, validateInventory, isValidatingInventory]);
+    // 商品削除時は在庫確認不要
+  }, [removeItem]);
 
   if (items.length === 0) {
     return (
@@ -190,8 +194,8 @@ export default function CartPage() {
 
             // 商品の最大注文可能数を計算
             const maxOrderQuantity = item.requiresInventory
-              ? Math.min(currentStock || DEFAULT_MAX_ORDER_QUANTITY, DEFAULT_MAX_ORDER_QUANTITY)
-              : DEFAULT_MAX_ORDER_QUANTITY;
+              ? Math.min(currentStock || DefaultMaxOrderQuantity, DefaultMaxOrderQuantity)
+              : DefaultMaxOrderQuantity;
 
             return (
               <Card
@@ -227,12 +231,12 @@ export default function CartPage() {
                       size="icon"
                       onClick={() => {
                         const newQuantity = item.quantity + 1;
-                        const maxQuantity = item.requiresInventory ? maxOrderQuantity : DEFAULT_MAX_ORDER_QUANTITY;
+                        const maxQuantity = item.requiresInventory ? maxOrderQuantity : DefaultMaxOrderQuantity;
                         if (newQuantity <= maxQuantity) {
                           handleQuantityChange(item.id, newQuantity);
                         }
                       }}
-                      disabled={item.quantity >= (item.requiresInventory ? maxOrderQuantity : DEFAULT_MAX_ORDER_QUANTITY)}
+                      disabled={item.quantity >= (item.requiresInventory ? maxOrderQuantity : DefaultMaxOrderQuantity)}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>

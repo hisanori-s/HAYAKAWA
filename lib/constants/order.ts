@@ -3,12 +3,12 @@
  */
 
 // 1回の注文で指定可能な最大数量（在庫管理対象外の商品）
-export const DEFAULT_MAX_ORDER_QUANTITY = 10;
+export const DefaultMaxOrderQuantity = 10;
 
 // 注文に関する設定
 export const ORDER_SETTINGS = {
   // 在庫管理対象外の商品の最大注文数
-  defaultMaxQuantity: DEFAULT_MAX_ORDER_QUANTITY,
+  defaultMaxQuantity: DefaultMaxOrderQuantity,
 
   // 在庫管理対象商品の注文数制限
   inventory: {
