@@ -96,7 +96,7 @@
 ### 実装内容
 1. 注文関連の定数ファイルを作成
    - `lib/constants/order.ts`を作成
-   - `DEFAULT_MAX_ORDER_QUANTITY`を定義（デフォルト値：10）
+   - `DefaultMaxOrderQuantity`を定義（デフォルト値：10）
    - `ORDER_SETTINGS`オブジェクトで将来の拡張に対応
 
 2. 定数の適用

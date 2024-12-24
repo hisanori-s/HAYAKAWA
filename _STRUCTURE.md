@@ -218,7 +218,7 @@ project-root:
       "order.ts":
         content: "注文関連の定数定義"
         exports:
-          - "DEFAULT_MAX_ORDER_QUANTITY | デフォルトの最大注文数"
+          - "DefaultMaxOrderQuantity | デフォルトの最大注文数"
           - "ORDER_SETTINGS | 注文設定オブジェクト"
       "demo-products.ts":
         exports:
