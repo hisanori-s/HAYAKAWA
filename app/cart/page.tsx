@@ -12,28 +12,26 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { DEFAULT_MAX_ORDER_QUANTITY } from '@/lib/constants/order';
 
 export default function CartPage() {
-  const { items, updateQuantity, removeItem } = useCartStore((state) => ({
+  const {
+    items,
+    updateQuantity,
+    removeItem,
+    isValidatingInventory,
+    inventoryError,
+    inventoryItems,
+    validateInventory
+  } = useCartStore((state) => ({
     items: state.items,
     updateQuantity: state.updateQuantity,
-    removeItem: state.removeItem
+    removeItem: state.removeItem,
+    isValidatingInventory: state.isValidatingInventory,
+    inventoryError: state.inventoryError,
+    inventoryItems: state.inventoryItems,
+    validateInventory: state.validateInventory
   }));
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const searchParams = useSearchParams();
-  const [inventoryError, setInventoryError] = useState<string | null>(null);
-  const [inventoryItems, setInventoryItems] = useState<Array<{
-    id: string;
-    name: string;
-    variations: Array<{
-      id: string;
-      name: string;
-      trackInventory: boolean;
-      soldOut: boolean;
-      inventoryCount: number;
-    }>;
-  }>>([]);
-  const [needsInventoryCheck, setNeedsInventoryCheck] = useState(false);
-  const [isValidatingInventory, setIsValidatingInventory] = useState(false);
 
   // 小計の計算
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -42,155 +40,23 @@ export default function CartPage() {
   // 合計金額の計算
   const total = subtotal + tax;
 
-  // 在庫管理商品の情報を取得する関数
-  const fetchInventoryItems = useCallback(async () => {
-    const itemsRequiringInventory = items.filter(item => item.requiresInventory);
-    if (itemsRequiringInventory.length === 0) {
-      setInventoryItems([]);
-      return null;
-    }
-
-    setIsValidatingInventory(true);
-    try {
-      const response = await fetch('/api/square/inventory', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          catalogItemVariationIds: itemsRequiringInventory.map(item => item.id)
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('在庫情報の取得に失敗しました');
-      }
-
-      const { counts } = await response.json();
-
-      // 在庫情報をマップに変換
-      const inventoryMap = counts.reduce((acc: { [key: string]: number }, count: { catalogObjectId: string; quantity: number }) => {
-        acc[count.catalogObjectId] = count.quantity;
-        return acc;
-      }, {});
-
-      const inventoryItemsData = itemsRequiringInventory.map(item => ({
-        id: item.id,
-        name: item.name,
-        variations: [{
-          id: item.id,
-          name: item.name,
-          trackInventory: item.requiresInventory,
-          soldOut: (inventoryMap[item.id] ?? 0) === 0,
-          inventoryCount: inventoryMap[item.id] ?? 0
-        }]
-      }));
-      setInventoryItems(inventoryItemsData);
-      return inventoryMap;
-    } catch (error) {
-      console.error('Inventory fetch error:', error);
-      toast({
-        title: 'エラー',
-        description: '在庫情報の取得に失敗しました',
-        variant: 'destructive',
-      });
-      return null;
-    } finally {
-      setIsValidatingInventory(false);
-    }
-  }, [items, toast]);
-
-  // 初回ロード時の全体在庫チェック
+  // 初回ロウント時の在庫確認
   useEffect(() => {
-    const checkInitialInventory = async () => {
-      const hasItemsRequiringInventory = items.some(item => item.requiresInventory);
-      setNeedsInventoryCheck(hasItemsRequiringInventory);
-
-      if (hasItemsRequiringInventory) {
-        setIsValidatingInventory(true);
-        try {
-          await fetchInventoryItems();
-        } finally {
-          setIsValidatingInventory(false);
-        }
-      } else {
-        setInventoryError(null);
-        setIsValidatingInventory(false);
-      }
-    };
-
-    const isInitialLoad = !inventoryItems.length && items.some(item => item.requiresInventory);
-    if (isInitialLoad) {
-      void checkInitialInventory();
+    const hasItemsRequiringInventory = items.some(item => item.requiresInventory);
+    if (hasItemsRequiringInventory && !isValidatingInventory && !inventoryItems.length) {
+      void validateInventory();
     }
-  }, [items, fetchInventoryItems, inventoryItems]); // 必要な依存配列を追加
-
-  // 在庫管理対象商品の数量変更監視
-  useEffect(() => {
-    // 初回ロード時は実行しない
-    if (!inventoryItems.length) return;
-
-    // 在庫管理対象商品の数量変更のみを監視
-    const hasInventoryItemChanged = items
-      .filter(item => item.requiresInventory)
-      .some(item => {
-        const inventoryItem = inventoryItems.find(inv => inv.id === item.id);
-        // 在庫情報がまだ取得されていない場合はスキップ
-        if (!inventoryItem) return false;
-        // 現在の注文数と在庫数を比較
-        return item.quantity !== inventoryItem.variations[0]?.inventoryCount;
-      });
-
-    if (hasInventoryItemChanged) {
-      setIsValidatingInventory(true);
-      void fetchInventoryItems().finally(() => {
-        setIsValidatingInventory(false);
-      });
-    }
-  }, [items, inventoryItems, fetchInventoryItems]);
+  }, [items, isValidatingInventory, inventoryItems.length, validateInventory]);
 
   // 数量変更のハンドラー
   const handleQuantityChange = useCallback((itemId: string, newQuantity: number) => {
     updateQuantity(itemId, newQuantity);
-  }, [updateQuantity]);
-
-  // 在庫情報が更新されたときのエラーチェック
-  useEffect(() => {
-    if (!items.some(item => item.requiresInventory)) {
-      setInventoryError(null);
-      return;
+    // 在庫管理商品の場合は在庫を再確認
+    const item = items.find(i => i.id === itemId);
+    if (item?.requiresInventory && !isValidatingInventory) {
+      void validateInventory();
     }
-
-    if (inventoryItems.length === 0) return;
-
-    // キャッシュされた在庫情報を使用してチェック
-    const invalidItems = items
-      .filter(item => item.requiresInventory)
-      .filter(item => {
-        const inventoryItem = inventoryItems.find(inv => inv.id === item.id);
-        const currentStock = inventoryItem?.variations[0]?.inventoryCount ?? 0;
-        return currentStock < item.quantity;
-      })
-      .map(item => {
-        const inventoryItem = inventoryItems.find(inv => inv.id === item.id);
-        const currentStock = inventoryItem?.variations[0]?.inventoryCount ?? 0;
-        return {
-          item,
-          availableQuantity: currentStock
-        };
-      });
-
-    if (invalidItems.length > 0) {
-      const errorMessage = invalidItems
-        .map(({ item, availableQuantity }) =>
-          `${item.name}: 在庫数 ${availableQuantity}個（注文数 ${item.quantity}個）`
-        )
-        .join('\n');
-      setInventoryError(`以下の商品の在庫が不足しています：\n${errorMessage}\n数量を調整してください。`);
-    } else {
-      setInventoryError(null);
-    }
-  }, [items, inventoryItems]);
+  }, [items, updateQuantity, validateInventory, isValidatingInventory]);
 
   // エラーメッセージの確認と表示
   useEffect(() => {
@@ -205,7 +71,8 @@ export default function CartPage() {
   }, [searchParams, toast]);
 
   const handleCheckout = async () => {
-    if (!needsInventoryCheck) {
+    const hasItemsRequiringInventory = items.some(item => item.requiresInventory);
+    if (!hasItemsRequiringInventory) {
       // 在庫確認が不要な場合は直接チェックアウトへ
       await proceedToCheckout();
       return;
@@ -213,37 +80,13 @@ export default function CartPage() {
 
     try {
       setIsLoading(true);
-      setInventoryError(null);
-
       // 最新の在庫情報を取得
-      const inventoryMap = await fetchInventoryItems();
-      if (!inventoryMap) {
-        throw new Error('在庫情報の取得に失敗しました');
+      await validateInventory();
+
+      // エラーがなければチェックアウトへ進む
+      if (!inventoryError) {
+        await proceedToCheckout();
       }
-
-      // 在庫不足のアイテムをチェック
-      const invalidItems = items
-        .filter(item => item.requiresInventory)
-        .filter(item => {
-          const stock = inventoryMap[item.id] ?? 0;
-          return stock < item.quantity;
-        })
-        .map(item => ({
-          item,
-          availableQuantity: inventoryMap[item.id] ?? 0
-        }));
-
-      if (invalidItems.length > 0) {
-        const errorMessage = invalidItems
-          .map(({ item, availableQuantity }) =>
-            `${item.name}: 在庫数 ${availableQuantity}個（注文数 ${item.quantity}個）`
-          )
-          .join('\n');
-        setInventoryError(`以下の商品の在庫が不足しています：\n${errorMessage}\n数量を調整してください。`);
-        return;
-      }
-
-      await proceedToCheckout();
     } catch (error) {
       console.error('Checkout error:', error);
       toast({
@@ -286,6 +129,19 @@ export default function CartPage() {
     }
   };
 
+  // 商品削除のハンドラー
+  const handleRemoveItem = useCallback((itemId: string) => {
+    removeItem(itemId);
+    // 商品削除後に在庫確認を実行（在庫管理商品が残っている場合のみ）
+    const hasRemainingInventoryItems = items
+      .filter(item => item.id !== itemId) // 削除する商品を除外
+      .some(item => item.requiresInventory);
+
+    if (hasRemainingInventoryItems && !isValidatingInventory) {
+      void validateInventory();
+    }
+  }, [items, removeItem, validateInventory, isValidatingInventory]);
+
   if (items.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -303,7 +159,7 @@ export default function CartPage() {
   return (
     <div className="container mx-auto px-4 py-8 relative">
       {/* 初回在庫チェック中のオーバーレイ */}
-      {isValidatingInventory && !inventoryItems.length && (
+      {isValidatingInventory && (
         <div className="fixed inset-0 bg-gray-500/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
             <Loader2 className="h-8 w-8 animate-spin mb-4" />
@@ -383,7 +239,8 @@ export default function CartPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => handleRemoveItem(item.id)}
+                      className="text-red-500 hover:bg-red-50 hover:text-red-600"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -466,7 +323,6 @@ export default function CartPage() {
                     <h4 className="font-semibold mb-2">在庫確認状態:</h4>
                     <pre className="text-xs overflow-auto bg-white p-2 rounded">
                       {JSON.stringify({
-                        needsInventoryCheck,
                         isValidatingInventory,
                         hasInventoryError: !!inventoryError
                       }, null, 2)}

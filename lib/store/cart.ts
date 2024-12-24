@@ -12,13 +12,40 @@ export type CartItem = {
   requiresInventory: boolean; // 在庫管理が必要な商品かどうか
 };
 
+// 在庫情報の型定義
+export interface InventoryItem {
+  id: string;
+  name: string;
+  variations: Array<{
+    id: string;
+    name: string;
+    trackInventory: boolean;
+    soldOut: boolean;
+    inventoryCount: number;
+  }>;
+}
+
+// カートの永続化対象の状態
+interface CartPersistState {
+  items: CartItem[];
+}
+
 // カートの状態管理インターフェース
-interface CartState {
-  items: CartItem[];                              // カート内の商品リスト
+interface CartState extends CartPersistState {
   addItem: (item: CartItem) => void;              // 商品をカートに追加
   removeItem: (id: string) => void;               // 商品をカートから削除
   updateQuantity: (id: string, quantity: number) => void;  // 商品の数量を更新
   clearCart: () => void;                          // カートを空にする
+  // 在庫確認関連の状態
+  isValidatingInventory: boolean;
+  needsInventoryCheck: boolean;
+  inventoryError: string | null;
+  inventoryItems: InventoryItem[];
+  // 在庫確認関連の関数
+  setInventoryValidating: (isValidating: boolean) => void;
+  setInventoryItems: (items: InventoryItem[]) => void;
+  setInventoryError: (error: string | null) => void;
+  validateInventory: () => Promise<void>;
 }
 
 // 古いデータを新しい形式に変換する関数
@@ -35,8 +62,8 @@ const migrateCartItem = (item: Partial<CartItem>): CartItem => {
 };
 
 type CartPersist = (
-  config: StateCreator<CartState>,
-  options: PersistOptions<CartState>
+  config: StateCreator<CartState, [], [], CartPersistState>,
+  options: PersistOptions<CartState, CartPersistState>
 ) => StateCreator<CartState>;
 
 const storage = {
@@ -58,7 +85,7 @@ const storage = {
 
 export const useCartStore = create<CartState>()(
   (persist as CartPersist)(
-    (set) => ({
+    (set, get) => ({
       items: [],
       addItem: (item: CartItem) =>
         set((state: CartState) => {
@@ -86,16 +113,156 @@ export const useCartStore = create<CartState>()(
           };
         }),
       removeItem: (id: string) =>
-        set((state: CartState) => ({
-          items: state.items.filter((item: CartItem) => item.id !== id),
-        })),
+        set((state: CartState) => {
+          // 商品を削除
+          const newItems = state.items.filter((item: CartItem) => item.id !== id);
+          // 在庫管理商品が残っているかチェック
+          const hasInventoryItems = newItems.some(item => item.requiresInventory);
+
+          if (!hasInventoryItems) {
+            // 在庫管理商品がない場合は在庫関連の状態をリセット
+            return {
+              items: newItems,
+              inventoryItems: [],
+              inventoryError: null,
+              isValidatingInventory: false,
+              needsInventoryCheck: false
+            };
+          }
+
+          return {
+            items: newItems,
+            // 在庫エラーが削除した商品に関するものだった場合はクリア
+            inventoryError: state.inventoryError?.includes(id) ? null : state.inventoryError
+          };
+        }),
       updateQuantity: (id: string, quantity: number) =>
         set((state: CartState) => ({
           items: state.items.map((item: CartItem) =>
             item.id === id ? { ...item, quantity } : item
           ),
         })),
-      clearCart: () => set({ items: [] }),
+      clearCart: () => set({
+        items: [],
+        inventoryItems: [],
+        inventoryError: null,
+        isValidatingInventory: false,
+        needsInventoryCheck: false
+      }),
+      // 在庫確認関連の初期状態
+      isValidatingInventory: false,
+      needsInventoryCheck: false,
+      inventoryError: null,
+      inventoryItems: [],
+      // 在庫確認関連の関数
+      setInventoryValidating: (isValidating: boolean) =>
+        set({ isValidatingInventory: isValidating }),
+      setInventoryItems: (items: InventoryItem[]) =>
+        set({ inventoryItems: items }),
+      setInventoryError: (error: string | null) =>
+        set({ inventoryError: error }),
+      validateInventory: async () => {
+        const state = get();
+        const itemsRequiringInventory = state.items.filter(item => item.requiresInventory);
+
+        if (itemsRequiringInventory.length === 0) {
+          set({
+            inventoryItems: [],
+            inventoryError: null,
+            isValidatingInventory: false,
+            needsInventoryCheck: false
+          });
+          return;
+        }
+
+        // 既に在庫確認中の場合は処理をスキップ
+        if (state.isValidatingInventory) {
+          return;
+        }
+
+        set({
+          isValidatingInventory: true,
+          inventoryError: null // 在庫確認開始時にエラーをクリア
+        });
+
+        try {
+          const response = await fetch('/api/square/inventory', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              catalogItemVariationIds: itemsRequiringInventory.map(item => item.id)
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('在庫情報の取得に失敗しました');
+          }
+
+          const { counts } = await response.json();
+
+          // 在庫情報をマップに変換
+          const inventoryMap = counts.reduce((acc: { [key: string]: number }, count: { catalogObjectId: string; quantity: number }) => {
+            acc[count.catalogObjectId] = count.quantity;
+            return acc;
+          }, {});
+
+          // 現在のカート内容を再取得（非同期処理中に変更されている可能性があるため）
+          const currentState = get();
+          const currentItems = currentState.items.filter(item => item.requiresInventory);
+
+          // 現在のカートに存在する商品の在庫情報のみを保持
+          const inventoryItemsData = currentItems.map(item => ({
+            id: item.id,
+            name: item.name,
+            variations: [{
+              id: item.id,
+              name: item.name,
+              trackInventory: item.requiresInventory,
+              soldOut: (inventoryMap[item.id] ?? 0) === 0,
+              inventoryCount: inventoryMap[item.id] ?? 0
+            }]
+          }));
+
+          // 在庫不足のアイテムをチェック（カート内の商品数と在庫数を比較）
+          const invalidItems = currentItems
+            .filter(item => {
+              const stock = inventoryMap[item.id] ?? 0;
+              // カート内の数量が在庫数を超えている場合のみエラーとする
+              return item.quantity > stock;
+            })
+            .map(item => ({
+              item,
+              availableQuantity: inventoryMap[item.id] ?? 0
+            }));
+
+          // 状態を一括で更新
+          set({
+            inventoryItems: inventoryItemsData,
+            inventoryError: invalidItems.length > 0
+              ? `以下の商品の在庫が不足しています：\n${
+                  invalidItems
+                    .map(({ item, availableQuantity }) =>
+                      `${item.name}: 在庫数 ${availableQuantity}個（注文数 ${item.quantity}個）`
+                    )
+                    .join('\n')
+                }\n数量を調整してください。`
+              : null,
+            isValidatingInventory: false,
+            needsInventoryCheck: false
+          });
+
+        } catch (error) {
+          console.error('Inventory fetch error:', error);
+          set({
+            inventoryError: '在庫情報の取得に失敗しました。ページを更新してもう一度お試しください。',
+            isValidatingInventory: false,
+            needsInventoryCheck: false
+          });
+          throw error;
+        }
+      },
     }),
     {
       name: 'cart-storage',
@@ -104,8 +271,17 @@ export const useCartStore = create<CartState>()(
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.items = state.items.map(migrateCartItem);
+          // 在庫関連の状態を初期化
+          state.isValidatingInventory = false;
+          state.needsInventoryCheck = false;
+          state.inventoryError = null;
+          state.inventoryItems = [];
         }
       },
+      // 永続化する状態を制限
+      partialize: (state) => ({
+        items: state.items
+      }),
     }
   )
 );
