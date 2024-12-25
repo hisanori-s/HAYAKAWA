@@ -1,2 +1,39 @@
 ## プロジェクトの概要
 Squareを商品管理と決済処理に利用したECサイトです。
+
+## 使用技術スタック
+
+このプロジェクトでは、以下の技術スタックを使用しています。
+
+- **フレームワーク**
+  - Next.js: バージョン 14.2.16
+  - React: バージョン 18
+
+- **状態管理**
+  - Zustand: バージョン 4.5.0
+
+- **スタイリング**
+  - Tailwind CSS: バージョン 3.4.1
+  - Tailwind Merge: バージョン 2.5.5
+  - Tailwind CSS Animate: バージョン 1.0.7
+
+- **UI コンポーネント**
+  - Radix UI: 複数のコンポーネントライブラリを使用
+  - Shadcn UI: バージョン 0.0.4
+  - Lucide React: バージョン 0.468.0
+
+- **決済処理**
+  - Square Web Payments SDK: バージョン 39.0.0
+
+- **開発ツール**
+  - TypeScript: バージョン 5
+  - ESLint: バージョン 8
+  - PostCSS: バージョン 8
+
+- **その他**
+  - Class Variance Authority: バージョン 0.7.1
+  - clsx: バージョン 2.1.1
+  - Embla Carousel React: バージョン 8.5.1
+  - Geist: バージョン 1.3.1
+
+この技術スタックは、商品管理と決済処理を効率的に行うために選定されています。
