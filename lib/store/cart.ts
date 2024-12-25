@@ -1,6 +1,5 @@
 import { create, StateCreator } from 'zustand';
 import { persist, PersistOptions } from 'zustand/middleware';
-import { DefaultMaxOrderQuantity } from '@/lib/constants/order';
 
 // カートに保存される商品情報の型定義
 export type CartItem = {
@@ -256,7 +255,7 @@ export const useCartStore = create<CartState>()(
         } catch (error) {
           console.error('Inventory fetch error:', error);
           set({
-            inventoryError: '在庫情報の取得に失敗しました。ページを更新してもう一度お試しください。',
+            inventoryError: '在庫情報の取得に失敗しました。ページを更新してもう一度お試しくだ���い。',
             isValidatingInventory: false,
             needsInventoryCheck: false
           });
