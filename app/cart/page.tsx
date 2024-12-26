@@ -175,11 +175,37 @@ export default function CartPage() {
       <h1 className="text-2xl font-bold mb-4">ショッピングカート</h1>
       <p className="text-gray-600 mb-8">{items.length}点の商品</p>
 
-      {inventoryError && (
+      {items.some(item => {
+        const inventoryItem = inventoryItems.find(inv => inv.id === item.id);
+        const currentStock = inventoryItem?.variations[0]?.inventoryCount ?? 0;
+        return item.requiresInventory && (currentStock === 0 || currentStock < item.quantity);
+      }) && (
         <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-md">
           <div className="flex items-start gap-2 text-red-700">
             <AlertTriangle className="h-5 w-5 mt-0.5" />
-            <div className="whitespace-pre-wrap">{inventoryError}</div>
+            <div>
+              <div>以下の商品は在庫の在庫数に変更がありました。お手数ですがご注文数の調整をお願いいたします：</div>
+              <ul className="list-disc ml-6 mt-2">
+                {items.map(item => {
+                  const inventoryItem = inventoryItems.find(inv => inv.id === item.id);
+                  const currentStock = inventoryItem?.variations[0]?.inventoryCount ?? 0;
+                  const isOutOfStock = item.requiresInventory && currentStock === 0;
+                  const isQuantityExceed = item.requiresInventory && currentStock > 0 && currentStock < item.quantity;
+
+                  if (isOutOfStock || isQuantityExceed) {
+                    return (
+                      <li key={item.id}>
+                        {item.name}：
+                        {isOutOfStock
+                          ? '在庫切れのため、カートから削除してください。'
+                          : `在庫数が${currentStock}個となりました。在庫数以下に数量を調整してください。`}
+                      </li>
+                    );
+                  }
+                  return null;
+                }).filter(Boolean)}
+              </ul>
+            </div>
           </div>
         </div>
       )}
@@ -190,7 +216,8 @@ export default function CartPage() {
             // 在庫不足かどうかをチェック
             const inventoryItem = inventoryItems.find(inv => inv.id === item.id);
             const currentStock = inventoryItem?.variations[0]?.inventoryCount ?? 0;
-            const isOutOfStock = item.requiresInventory && currentStock < item.quantity;
+            const isOutOfStock = item.requiresInventory && currentStock === 0;
+            const isQuantityExceed = item.requiresInventory && currentStock > 0 && currentStock < item.quantity;
 
             // 商品の最大注文可能数を計算
             const maxOrderQuantity = item.requiresInventory
@@ -200,7 +227,7 @@ export default function CartPage() {
             return (
               <Card
                 key={item.id}
-                className={`p-4 ${isOutOfStock ? 'bg-red-50 border-red-200' : ''}`}
+                className={`p-4 ${(isOutOfStock || isQuantityExceed) ? 'bg-red-50 border-red-200' : ''}`}
                 data-inventory-check={item.requiresInventory}
               >
                 <div className="flex justify-between items-start">
@@ -221,7 +248,7 @@ export default function CartPage() {
                         const newQuantity = Math.max(1, item.quantity - 1);
                         handleQuantityChange(item.id, newQuantity);
                       }}
-                      disabled={item.quantity <= 1}
+                      disabled={isOutOfStock || item.quantity <= 1}
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
@@ -231,12 +258,11 @@ export default function CartPage() {
                       size="icon"
                       onClick={() => {
                         const newQuantity = item.quantity + 1;
-                        const maxQuantity = item.requiresInventory ? maxOrderQuantity : DefaultMaxOrderQuantity;
-                        if (newQuantity <= maxQuantity) {
+                        if (newQuantity <= maxOrderQuantity) {
                           handleQuantityChange(item.id, newQuantity);
                         }
                       }}
-                      disabled={item.quantity >= (item.requiresInventory ? maxOrderQuantity : DefaultMaxOrderQuantity)}
+                      disabled={isOutOfStock || item.quantity >= maxOrderQuantity}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
