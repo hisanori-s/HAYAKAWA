@@ -1,90 +1,143 @@
-# Square Checkout APIの改善とリダイレクト処理の実装
+# 商品一覧の表示パフォーマンス改善
 
-## 現在の状態
-1. Square Checkout APIの在庫管理連携が完了
-   - カタログ商品IDを使用した決済リンク生成
-   - Square側での自動在庫管理の有効化
-   - 余分な在庫確認処理の削除
+## 現在の課題
+商品一覧画面の初期表示が遅い状態にあります。原因として、以下が推測されます：
+- 全商品の詳細情報を一括取得してから表示している可能性
+- 不要な情報まで初期表示時に取得している可能性
 
-2. 課題点
-   - 決済後のリダイレクトページが真っ白で表示されない
-   - リダイレクト時のSquareからのパラメータ確認が未実装
+## 改善提案
+2段階での商品情報取得による表示の高速化：
+
+1. 第1段階（初期表示）
+   - 必要最小限の情報のみを先に取得
+     - 商品名
+     - バリエーションID
+     - カテゴリ
+     - 金額
+   - これらの情報で一覧表示を構成
+   - この段階では在庫状態（売り切れ）表示は不要
+
+2. 第2段階（非同期取得）
+   - 商品詳細情報を非同期で取得
+   - ユーザーの操作に応じて必要な情報を取得
+   - 取得完了後に表示を更新
+   - 在庫情報を取得し、売り切れ表示を後から追加
 
 ## 確認・実装項目
-1. リダイレクト処理の確認
-   - `app/cart/complete/page.tsx`の実装状態
-   - `app/cart/error/page.tsx`の実装状態
-   - リダイレクトURLの設定確認（`app/api/square/checkout/route.ts`）
 
-2. デバッグ情報の実装
+### 1. 現状の実装確認
+1. 商品情報取得のフロー
+   - `app/page.tsx`
+   - `components/product-list.tsx`
+   - `lib/square/client.ts`の商品取得関連の実装
+
+2. Square APIの呼び出し方法
+   - 現在のエンドポイント使用状況
+   - バッチ処理の有無
+   - キャッシュの実装状況
+
+### 2. パフォーマンス計測
+1. 現状の表示速度計測
+   - 初期表示までの時間
+   - 商品情報取得にかかる時間
+   - APIレスポンスタイム
+
+2. ボトルネックの特定
+   - ネットワーク転送時間
+   - データ処理時間
+   - レンダリング時間
+
+### 3. 改善実装の検討
+1. APIエンドポイントの最適化
    ```typescript
-   // リダイレクトページでのデバッグ情報表示
-   console.log('Square redirect parameters:', {
-     searchParams,
-     orderId: searchParams.get('orderId'),
-     referenceId: searchParams.get('referenceId'),
-     status: searchParams.get('status')
-   });
+   // 基本情報取得用エンドポイントの提案
+   GET /api/square/catalog/basic
+   // レスポンス例
+   {
+     items: [{
+       id: string,
+       name: string,
+       variationId: string,
+       category: string,
+       price: number
+     }]
+   }
+
+   // 詳細情報取得用エンドポイントの提案（在庫情報を含む）
+   GET /api/square/catalog/detail/:id
+   // レスポンス例
+   {
+     description: string,
+     images: string[],
+     inventory: {
+       quantity: number,
+       isSoldOut: boolean
+     }
+   }
    ```
 
-3. デバッグ用UI実装
-   - 成功・失敗両方のUIを実装
-   - トグルボタンで表示切替可能に
-   - 現在のステータスに基づいて、本来表示されるべきUIを明示
+2. フロントエンド実装
    ```typescript
-   // デバッグ用トグル実装例
-   const [showSuccessUI, setShowSuccessUI] = useState(true);
-   const actualStatus = searchParams.get('status');
+   // 2段階取得の実装例
+   const ProductList = () => {
+     // 基本情報の取得と表示
+     const { data: basicItems } = useQuery(['products', 'basic'], getBasicProducts);
 
-   return (
-     <div>
-       <div className="debug-panel">
-         <p>実際のステータス: {actualStatus}</p>
-         <p>本来の表示: {actualStatus === 'ok' ? '成功UI' : 'エラーUI'}</p>
-         <button onClick={() => setShowSuccessUI(!showSuccessUI)}>
-           {showSuccessUI ? 'エラーUIを表示' : '成功UIを表示'}
-         </button>
+     // 詳細情報の非同期取得の提案（在庫情報を含む）
+     const { data: details } = useQuery(
+       ['products', 'details'],
+       getProductDetails,
+       { enabled: !!basicItems }
+     );
+
+     return (
+       <div>
+         {basicItems?.map(item => (
+           <ProductCard
+             key={item.id}
+             basicInfo={item}
+             details={details?.[item.id]}
+             // 詳細情報が取得できた場合のみ売り切れ表示
+             isSoldOut={details?.[item.id]?.inventory.isSoldOut}
+           />
+         ))}
        </div>
-       {showSuccessUI ? <SuccessUI /> : <ErrorUI />}
-     </div>
-   );
+     );
+   };
    ```
 
 ## 必要なファイル
-1. `app/cart/complete/page.tsx`
-   - 決済完了ページの実装確認
-   - Squareからのパラメータ処理の実装
-   - デバッグ用トグルUIの実装
+1. `app/api/square/catalog/route.ts`
+   - 現在の商品取得ロジックの確認
+   - APIエンドポイントの実装状態
 
-2. `app/cart/error/page.tsx`
-   - エラーページの実装確認
-   - エラー情報の表示実装
-   - デバッグ用トグルUIの実装
+2. `components/product-list.tsx`
+   - 商品一覧の表示ロジック
+   - データ取得と表示の制御方法
 
-3. `app/api/square/checkout/route.ts`
-   - リダイレクトURL設定の確認
-   - 環境変数の設定確認
+3. `lib/square/client.ts`
+   - Square APIクライアントの実装
+   - データ取得メソッドの実装
 
 ## 完了条件
-1. 決済完了後、適切なページが表示されること
-2. Squareからのリダイレクトパラメータがコンソールに表示されること
-3. エラー時も適切なページに遷移し、エラー情報が表示されること
-4. デバッグ用トグルUIで成功・エラー両方の表示を確認できること
+1. 商品一覧の初期表示が現状より高速化されること
+2. ユーザー体験を損なわない形で詳細情報が表示されること
+3. パフォーマンス改善の効果が計測可能であること
+4. 売り切れ表示が詳細情報取得後に適切に反映されること
 
 ## 次のAIへの指示
-1. まず、各リダイレクトページの実装状態を確認してください
-2. リダイレクトページにデバッグ情報の表示を実装してください
-3. デバッグ用のトグルUIを実装してください：
-   - 成功・エラー両方のUIを用意
-   - トグルボタンで切り替え可能に
-   - 実際のステータスと本来の表示を明示
-4. 必要に応じて、以下の実装を行ってください：
-   - 決済完了ページの表示実装
-   - エラーページの表示実装
-   - リダイレクトURLの設定確認と修正
+1. まず、現在の実装を確認し、パフォーマンスのボトルネックを特定してください
+2. 2段階での商品情報取得の実現可能性を検証してください
+3. 以下の観点で改善案を提示してください：
+   - 初期表示の高速化
+   - ユーザー体験の最適化（売り切れ表示の後出しを含む）
+   - 実装の複雑性とメンテナンス性
+4. 改善案の実装手順と期待される効果を具体的に示してください
 
 ## 参考情報
-Square Checkout APIのリダイレクト時のパラメータ：
-- `orderId`: 注文ID
-- `referenceId`: 参照ID
-- `status`: 決済状態（'ok' または 'error'）
+Square Catalog APIの特徴：
+- バッチ処理による複数商品の一括取得が可能
+- キャッシュの活用でレスポンスタイムを改善可能
+- 必要なフィールドの指定による応答サイズの最適化が可能
+- 在庫情報は別APIで取得する必要があり、基本情報とは分離可能
+- 第１段階での情報取得時に売り切れ情報の取得を含めることに対してとくにUX上の問題がない場合は、第１段階の時点で売り切れ情報の取得を含めてもよい
