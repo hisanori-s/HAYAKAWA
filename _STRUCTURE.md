@@ -19,6 +19,9 @@ project-root/
 ├── _STRUCTURE.md
 ├── app
 │   ├── api
+│   │   ├── email
+│   │   │   └── auto-reply
+│   │   │       └── route.ts
 │   │   └── square
 │   │       ├── catalog
 │   │       │   ├── api-routes.ts
@@ -52,6 +55,8 @@ project-root/
 │   │   └── cart-provider.tsx
 │   ├── payment
 │   │   └── square-payment.tsx
+│   ├── receipt
+│   │   └── receipt-notice.tsx
 │   ├── ui
 │   │   ├── accordion.tsx
 │   │   ├── button.tsx
@@ -71,11 +76,14 @@ project-root/
 │   └── product-list.tsx
 ├── components.json
 ├── env
+│   ├── .env.example
 │   ├── .env.local.product
-│   └── .env.local.sandbox
+│   ├── .env.local.sandbox
+│   └── .env.product
 ├── lib
 │   ├── constants
 │   │   ├── demo-products.ts
+│   │   ├── email.ts
 │   │   └── order.ts
 │   ├── square
 │   │   ├── client.ts
@@ -119,6 +127,14 @@ project:
 project-root:
   app:
     api:
+      email:
+        "auto-reply/route.ts":
+          content: "自動返信メール送信用のAPIエンドポイント"
+          exports:
+            - "POST /api/email/auto-reply: 注文確認の自動返信メールを送信"
+          dependencies:
+            - "@/lib/constants/email"
+
       square:
         "catalog/route.ts":
           dependencies:
@@ -158,12 +174,14 @@ project-root:
           Square Checkout完了・エラー画面
           - トランザクションIDとオーダーIDに基づく成功判定
           - 成功/エラー時の適切なUI表示
+          - 電子レシートと自動返信メールの案内表示
           - デバッグ情報の表示（テストモード時のみ）
         exports:
           - "CheckoutDonePage | 決済完了・エラー画面コンポーネント"
         dependencies:
           - "@/components/ui/button"
           - "@/lib/store/cart"
+          - "@/lib/constants/email"
 
   components:
     cart:
@@ -183,6 +201,15 @@ project-root:
           - "SquarePayment | Square Checkout APIを使用した決済コンポーネント"
         dependencies:
           - "@/lib/square/client"
+
+    receipt:
+      "receipt-notice.tsx":
+        content: "電子レシート通知コンポーネント"
+        exports:
+          - "ReceiptNotice | 電子レシートと自動返信メールの案内を表示"
+        dependencies:
+          - "@/lib/constants/email"
+          - "@/components/ui/card"
 
     ui:
       "accordion.tsx": {}
@@ -217,13 +244,21 @@ project-root:
         - "@/lib/square/client"
 
   env:
+    ".env.example":
+      content: "環境変数のサンプルファイル"
     ".env.local.product":
-      content: "本番環境用の環境変数設定ファイル"
+      content: "本番環境用の環境変数設定をローカルで試すファイル（一部本番用データを記載）"
     ".env.local.sandbox":
-      content: "開発環境用の環境変数設定ファイル"
+      content: "開発環境用の環境変数設定をローカルで試すファイル"
+    ".env.product":
+      content: "本番環境用の環境変数設定ファイル（すべて本番用データを記載）"
 
   lib:
     constants:
+      "email.ts":
+        content: "メール関連の定数定義"
+        exports:
+          - "EMAIL_MESSAGES | メールテンプレートと通知メッセージの定義"
       "order.ts":
         content: "注文関連の定数定義"
         exports:
@@ -262,5 +297,8 @@ project-root:
       content: "Square API関連のユーティリティ関数"
       exports:
         - "formatPrice | 価格フォーマット関数"
+      dependencies:
+        - "@/lib/square/types"
+
     "utils.ts": {}
 ```
