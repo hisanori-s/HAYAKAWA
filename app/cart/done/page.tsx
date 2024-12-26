@@ -17,6 +17,7 @@ export default function CheckoutDonePage() {
   // Square Checkoutからのパラメータを取得
   const transactionId = searchParams.get('transactionId');
   const orderId = searchParams.get('orderId');
+  const buyerEmail = searchParams.get('buyer_email');
   const isSuccess = transactionId && orderId;
 
   // デバッグ情報をコンソールに出力（開発時のみ）
@@ -36,8 +37,23 @@ export default function CheckoutDonePage() {
         title: '決済完了',
         description: 'ご注文ありがとうございます。',
       });
+
+      // 自動返信メールを送信
+      if (buyerEmail) {
+        // ココに自動送信機能を実装予定
+        fetch('/api/email/auto-reply', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: buyerEmail,
+            orderId
+          }),
+        }).catch(console.error);
+      }
     }
-  }, [isSuccess, clearCart, toast]);
+  }, [isSuccess, clearCart, toast, buyerEmail, orderId]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -96,6 +112,12 @@ export default function CheckoutDonePage() {
                   </>
                 )}
               </dl>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 my-4">
+              <p className="text-blue-800">
+                決済手続きの完了後、電子レシートが送信されます。また、ご注文内容確認用の自動送信メールが送信されます。
+              </p>
             </div>
           </>
         ) : (
