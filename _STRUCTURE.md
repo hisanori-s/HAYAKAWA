@@ -127,6 +127,9 @@ project-root:
             - "@/lib/square/client"
             - "@/lib/square/types"
         "checkout/route.ts":
+          content: "Square Checkout APIを使用した決済処理エンドポイント"
+          exports:
+            - "POST /api/square/checkout: カタログ商品IDを使用した決済リンクの生成"
           dependencies:
             - "@/lib/square/client"
         "image/batch/route.ts":
@@ -143,12 +146,11 @@ project-root:
       "page.tsx":
         content: |-
           カートページのメインコンポーネント
-          - 在庫確認機能の実装
-          - 在庫状態に基づく購入制限
-          - 在庫確認中の表示制御
           - カート内商品の表示と操作機能
+          - 商品の数量変更と削除
+          - Square Checkoutへの遷移処理
         exports:
-          - "CartPage | カート内商品の表示と在庫確認機能を提供"
+          - "CartPage | カート内商品の表示と操作機能を提供"
         dependencies:
           - "@/lib/store/cart"
           - "@/lib/square/client"
@@ -172,6 +174,9 @@ project-root:
 
     payment:
       "square-payment.tsx":
+        content: "Square決済処理コンポーネント"
+        exports:
+          - "SquarePayment | Square Checkout APIを使用した決済コンポーネント"
         dependencies:
           - "@/lib/square/client"
 
@@ -197,9 +202,9 @@ project-root:
         - "@/components/product-list"
     "header.tsx": {}
     "product-list.tsx":
-      content: "商品一覧表示と在庫管理機能を含むコンポーネント"
+      content: "商品一覧表示コンポーネント"
       exports:
-        - "ProductList | 商品一覧と在庫状態を表示"
+        - "ProductList | 商品一覧と商品詳細を表示"
       dependencies:
         - "@/components/ui/dialog"
         - "@/components/ui/button"
@@ -234,13 +239,12 @@ project-root:
       "cart.ts":
         content: |-
           カートの状態管理ストア
-          - 在庫確認機能の統合
-          - 在庫状態に基づく購入制限
-          - 状態更新の最適化
+          - カート商品の追加・削除・数量変更
+          - カタログ商品IDの管理
+          - 状態の永続化（LocalStorage）
         exports:
           - "CartItem | カート内商品の型定義"
           - "useCartStore | カート操作用Zustandストア"
-          - "InventoryState | 在庫状態の型定義"
         dependencies:
           - "@/lib/constants/order"
 
