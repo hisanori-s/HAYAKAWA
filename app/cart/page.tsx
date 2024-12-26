@@ -61,10 +61,19 @@ export default function CartPage() {
 
     updateQuantity(itemId, newQuantity);
 
-    // 在庫確認が必要なケース：
-    // 在庫オーバー状態の商品の数量を変更する場合のみ
-    // （在庫数以下になるまで監視）
-    if (isCurrentlyOverStock && !isValidatingInventory) {
+    // ローカルでの在庫状態チェック
+    const hasInventoryIssue = items.some(cartItem => {
+      if (!cartItem.requiresInventory) return false;
+      const inv = inventoryItems.find(i => i.id === cartItem.id);
+      const stock = inv?.variations[0]?.inventoryCount ?? 0;
+      return stock === 0 || (cartItem.id === itemId ? newQuantity > stock : cartItem.quantity > stock);
+    });
+
+    if (!hasInventoryIssue) {
+      // 在庫に問題がなければエラー状態をクリア
+      useCartStore.setState({ inventoryError: null });
+    } else if (isCurrentlyOverStock && !isValidatingInventory) {
+      // 在庫オーバー状態の場合は従来通り在庫確認を実行
       void validateInventory();
     }
   }, [items, updateQuantity, validateInventory, isValidatingInventory, inventoryItems]);
@@ -131,7 +140,7 @@ export default function CartPage() {
       console.error('Checkout error:', error);
       toast({
         title: 'エラー',
-        description: error instanceof Error ? error.message : 'チェックアウトに失敗しました。もう一度お試しください。',
+        description: error instanceof Error ? error.message : 'チェックアウトに失敗��ました。もう一度お試しください。',
         variant: 'destructive',
       });
       throw error; // エラーを再スローして上位ハンドラーでも処理できるようにする
@@ -143,8 +152,22 @@ export default function CartPage() {
   // 商品削除のハンドラー
   const handleRemoveItem = useCallback((itemId: string) => {
     removeItem(itemId);
-    // 商品削除時は在庫確認不要
-  }, [removeItem]);
+
+    // 削除後の在庫状態チェック
+    const hasInventoryIssue = items
+      .filter(item => item.id !== itemId) // 削除する商品を除外
+      .some(cartItem => {
+        if (!cartItem.requiresInventory) return false;
+        const inv = inventoryItems.find(i => i.id === cartItem.id);
+        const stock = inv?.variations[0]?.inventoryCount ?? 0;
+        return stock === 0 || cartItem.quantity > stock;
+      });
+
+    if (!hasInventoryIssue) {
+      // 在庫に問題がなければエラー状態をクリア
+      useCartStore.setState({ inventoryError: null });
+    }
+  }, [items, removeItem, inventoryItems]);
 
   if (items.length === 0) {
     return (
