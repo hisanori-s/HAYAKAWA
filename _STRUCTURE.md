@@ -37,11 +37,7 @@ project-root/
 │   │       └── test
 │   │           └── route.ts
 │   ├── cart
-│   │   ├── check
-│   │   │   └── page.tsx
-│   │   ├── complete
-│   │   │   └── page.tsx
-│   │   ├── error
+│   │   ├── done
 │   │   │   └── page.tsx
 │   │   └── page.tsx
 │   ├── fonts
@@ -75,6 +71,8 @@ project-root/
 │   └── product-list.tsx
 ├── components.json
 ├── env
+│   ├── .env.local.product
+│   └── .env.local.sandbox
 ├── lib
 │   ├── constants
 │   │   ├── demo-products.ts
@@ -155,11 +153,17 @@ project-root:
           - "@/lib/store/cart"
           - "@/lib/square/client"
           - "@/lib/constants/order"
-      "check/page.tsx":
+      "done/page.tsx":
+        content: |-
+          Square Checkout完了・エラー画面
+          - トランザクションIDとオーダーIDに基づく成功判定
+          - 成功/エラー時の適切なUI表示
+          - デバッグ情報の表示（テストモード時のみ）
+        exports:
+          - "CheckoutDonePage | 決済完了・エラー画面コンポーネント"
         dependencies:
-          - "@/components/payment/square-payment"
-      "complete/page.tsx": {}
-      "error/page.tsx": {}
+          - "@/components/ui/button"
+          - "@/lib/store/cart"
 
   components:
     cart:
@@ -211,6 +215,12 @@ project-root:
         - "@/lib/constants/order"
         - "@/lib/square/types"
         - "@/lib/square/client"
+
+  env:
+    ".env.local.product":
+      content: "本番環境用の環境変数設定ファイル"
+    ".env.local.sandbox":
+      content: "開発環境用の環境変数設定ファイル"
 
   lib:
     constants:
