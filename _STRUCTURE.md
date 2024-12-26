@@ -53,8 +53,7 @@ project-root/
 │   └── page.tsx
 ├── components
 │   ├── cart
-│   │   ├── cart-provider.tsx
-│   │   └── cart-items.tsx
+│   │   └── cart-provider.tsx
 │   ├── payment
 │   │   └── square-payment.tsx
 │   ├── ui
@@ -147,10 +146,10 @@ project-root:
           - 在庫確認機能の実装
           - 在庫状態に基づく購入制限
           - 在庫確認中の表示制御
+          - カート内商品の表示と操作機能
         exports:
           - "CartPage | カート内商品の表示と在庫確認機能を提供"
         dependencies:
-          - "@/components/cart/cart-items"
           - "@/lib/store/cart"
           - "@/lib/square/client"
           - "@/lib/constants/order"
@@ -170,11 +169,6 @@ project-root:
         dependencies:
           - "@/lib/store/cart"
           - "@/lib/square/client"
-      "cart-items.tsx":
-        content: "カート内商品一覧表示コンポーネント"
-        dependencies:
-          - "@/lib/store/cart"
-          - "@/lib/constants/order"
 
     payment:
       "square-payment.tsx":
