@@ -3,7 +3,8 @@ import { persist, PersistOptions } from 'zustand/middleware';
 
 // カートに保存される商品情報の型定義
 export type CartItem = {
-  id: string;                  // バリエーションID
+  id: string;                  // 内部管理用ID
+  catalogObjectId: string;     // Square CatalogのバリエーションID
   name: string;               // 商品名
   price: number;              // 価格
   quantity: number;           // 数量
@@ -52,6 +53,7 @@ const migrateCartItem = (item: Partial<CartItem>): CartItem => {
   const hasNameWithVariation = typeof item.name === 'string' && item.name.includes(' - ') && item.name.split(' - ')[1] !== '';
   return {
     id: item.id || '',
+    catalogObjectId: item.catalogObjectId || item.id || '', // 後方互換性のため、idをフォールバックとして使用
     name: item.name || '',
     price: item.price || 0,
     quantity: item.quantity || 0,
@@ -255,7 +257,7 @@ export const useCartStore = create<CartState>()(
         } catch (error) {
           console.error('Inventory fetch error:', error);
           set({
-            inventoryError: '在庫情報の取得に失敗しました。ページを更新してもう一度お試しくだ���い。',
+            inventoryError: '在庫情報の取得に失敗しました。ページを更新してもう一度お試しください。',
             isValidatingInventory: false,
             needsInventoryCheck: false
           });

@@ -5,9 +5,11 @@ import { ApiError, CreatePaymentLinkRequest } from 'square';
 
 interface CartItem {
   id: string;
+  catalogObjectId: string;
   name: string;
   price: number;
   quantity: number;
+  requiresInventory: boolean;
 }
 
 interface CheckoutRequest {
@@ -38,24 +40,10 @@ export async function POST(request: Request) {
       idempotencyKey: randomUUID(),
       order: {
         locationId: process.env.SQUARE_LOCATION_ID,
-        lineItems: items.map((item) => {
-          // 金額のデバッグログ
-          const amount = BigInt(item.price);
-          console.log('Processing item price:', {
-            itemName: item.name,
-            originalPrice: item.price,
-            convertedAmount: amount.toString()
-          });
-
-          return {
-            name: item.name,
-            quantity: item.quantity.toString(),
-            basePriceMoney: {
-              amount: amount,
-              currency: "JPY"
-            }
-          };
-        }),
+        lineItems: items.map((item) => ({
+          catalogObjectId: item.catalogObjectId || item.id,
+          quantity: item.quantity.toString()
+        })),
         taxes: [{
           name: "消費税",
           percentage: "10",
@@ -72,9 +60,8 @@ export async function POST(request: Request) {
         country: "JP",
         currency: "JPY",
         ...(isSandbox && {
-          // サンドボックス環境での追加設定
           acceptedPaymentMethods: {
-            applePay: false,  // サンドボックスではデジタルウォレットは無効化
+            applePay: false,
             googlePay: false,
             cashAppPay: false,
             afterpayClearpay: false
